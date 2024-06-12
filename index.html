@@ -3,18 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera and Audio Check</title>
+    <title>FeedChecker - Camera and Audio Check</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <meta name="description" content="FeedChecker is an open-source online tool for testing your camera and audio feed.">
+    <meta name="keywords" content="camera test, audio test, video test, microphone test, online tool">
+    <meta name="author" content="Kunal Jaykam">
 </head>
 <body>
-    <h1>Camera and Audio Check</h1>
-    <video id="video" autoplay playsinline></video>
-    <div>
-        <button id="startButton">Start Camera</button>
-        <button id="stopButton">Stop Camera</button>
-    </div>
-    <audio id="audio" controls></audio>
+    <header>
+        <div class="header-left">
+            <h1><a href="https://github.com/kunaljaykam/feedchecker" target="_blank">FeedChecker.org</a></h1>
+        </div>
+        <div class="header-right">
+            <a href="https://github.com/kunaljaykam/feedchecker" target="_blank">GitHub</a>
+        </div>
+    </header>
+    <main>
+        <section class="test-section">
+            <div class="test-container">
+                <div class="video-audio-test">
+                    <h2>Video and Audio Test</h2>
+                    <video id="video" autoplay playsinline></video>
+                    <div>
+                        <button id="startButton">Start Video</button>
+                        <button id="stopButton">Stop Video</button>
+                    </div>
+                </div>
+                <div class="separator"></div>
+                <div class="audio-test">
+                    <h2>Audio Test Only</h2>
+                    <button id="startAudioButton">Start Audio Check</button>
+                    <button id="stopAudioButton">Stop Audio Check</button>
+                    <audio id="audio" controls></audio>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>Designed by <a href="https://kunaljaykam.com" target="_blank">Kunal Jaykam</a></p>
+    </footer>
     <script src="script.js"></script>
 </body>
 </html>

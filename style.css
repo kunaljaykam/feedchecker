@@ -1,35 +1,88 @@
 body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    font-family: "Courier New", Courier, monospace;
     margin: 0;
     background-color: #f0f0f0;
 }
 
-h1 {
-    margin-bottom: 20px;
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border: none !important; /* Override simple css*/
+    background: none !important; /* Override simple css*/
 }
 
-video {
-    width: 80%;
-    max-width: 600px;
-    margin-bottom: 20px;
-    background-color: #000;
+.header-left {
+    display: flex;
+    align-items: center;
 }
 
-div {
-    margin-bottom: 20px;
+.logo {
+    height: 40px;
+    margin-right: 10px;
+}
+
+.header-right a, h1 a {
+    color: #333;
+    text-decoration: none;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.test-section {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.test-container {
+    display: flex;
+    width: 100%;
+}
+
+.test-container > div {
+    text-align: center;
+}
+
+.separator {
+    width: 1px;
+    background-color: #FFB300;
+    height: auto;
+    margin: 0 36px;
 }
 
 button {
     padding: 10px 20px;
     margin: 5px;
     font-size: 16px;
+    cursor: pointer;
+}
+
+video {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+    background-color: #000;
 }
 
 audio {
     margin-top: 20px;
+    width: 100%;
+    max-width: 600px;
+}
+
+footer {
+    text-align: center;
+    padding: 10px;
+    color: #333;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    border: none !important; /* Override simple css*/
 }
