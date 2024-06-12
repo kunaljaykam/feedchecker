@@ -9,8 +9,8 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    border: none !important; /* Override simple css*/
-    background: none !important; /* Override simple css*/
+    border: none !important; /* Override simple css */
+    background: none !important; /* Override simple css */
 }
 
 .header-left {
@@ -84,5 +84,36 @@ footer {
     position: fixed;
     width: 100%;
     bottom: 0;
-    border: none !important; /* Override simple css*/
+    border: none !important; /* Override simple css */
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+    }
+    
+    .test-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .test-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .separator {
+        width: 80%;
+        height: 1px;
+        margin: 20px 0;
+    }
+
+    video, audio {
+        max-width: 100%;
+    }
+
+    footer {
+        position: relative;
+    }
 }
