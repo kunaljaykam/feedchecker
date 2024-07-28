@@ -23,7 +23,7 @@ header {
     margin-right: 10px;
 }
 
-.header-right a, h1 a {
+.header-right a, h4 a {
     color: #333;
     text-decoration: none;
 }
