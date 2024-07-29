@@ -4,12 +4,55 @@ const startButton = document.getElementById('startButton');
 const stopButton = document.getElementById('stopButton');
 const startAudioButton = document.getElementById('startAudioButton');
 const stopAudioButton = document.getElementById('stopAudioButton');
+const speedHeader = document.getElementById('speed-header');
 let stream;
 let audioStream;
 let audioContext;
 let sourceNode;
 let delayNode;
 let gainNode;
+
+async function measureSingleRequestSpeed(testFileUrl, fileSizeInBytes) {
+    const startTime = new Date().getTime();
+    const response = await fetch(testFileUrl);
+    const endTime = new Date().getTime();
+
+    if (!response.ok) {
+        throw new Error('Failed to download the test file.');
+    }
+
+    const durationInSeconds = (endTime - startTime) / 1000;
+    const speedBps = fileSizeInBytes / durationInSeconds;
+    return speedBps / (1024 * 1024); // Convert to Mbps
+}
+
+async function measureInternetSpeed() {
+    const fileSizeInBytes = 1 * 1024 * 1024; // Size of the test file in bytes (1MB)
+    const testFileUrl = `https://elasticbeanstalk-us-west-2-357568096535.s3.amazonaws.com/png-1mb.png?rand=${Math.random()}`;
+
+    const numRequests = 5;
+    let totalSpeedMbps = 0;
+
+    for (let i = 0; i < numRequests; i++) {
+        const speedMbps = await measureSingleRequestSpeed(testFileUrl, fileSizeInBytes);
+        totalSpeedMbps += speedMbps;
+    }
+
+    const averageSpeedMbps = totalSpeedMbps / numRequests;
+    return averageSpeedMbps;
+}
+
+async function updateSpeedHeader() {
+    try {
+        const speedMbps = await measureInternetSpeed();
+        speedHeader.textContent = `Your internet speed is approximately ${speedMbps.toFixed(2)} Mbps.`;
+    } catch (error) {
+        speedHeader.textContent = 'Unable to determine internet speed.';
+    }
+}
+
+// Check internet speed on page load
+window.addEventListener('load', updateSpeedHeader);
 
 startButton.addEventListener('click', async () => {
     try {
@@ -32,6 +75,8 @@ stopButton.addEventListener('click', () => {
 startAudioButton.addEventListener('click', async () => {
     try {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audio.srcObject = audioStream;
+        audio.play();
 
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -43,9 +88,9 @@ startAudioButton.addEventListener('click', async () => {
 
         sourceNode = audioContext.createMediaStreamSource(audioStream);
         delayNode = audioContext.createDelay();
-        delayNode.delayTime.value = 0.5; // Set the delay time in seconds
+        delayNode.delayTime.value = 0.5;
         gainNode = audioContext.createGain();
-        gainNode.gain.value = 1.0; // Set the volume (gain)
+        gainNode.gain.value = 1.0;
 
         sourceNode.connect(delayNode);
         delayNode.connect(gainNode);
