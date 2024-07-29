@@ -6,6 +6,10 @@ const startAudioButton = document.getElementById('startAudioButton');
 const stopAudioButton = document.getElementById('stopAudioButton');
 let stream;
 let audioStream;
+let audioContext;
+let sourceNode;
+let delayNode;
+let gainNode;
 
 startButton.addEventListener('click', async () => {
     try {
@@ -28,8 +32,24 @@ stopButton.addEventListener('click', () => {
 startAudioButton.addEventListener('click', async () => {
     try {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audio.srcObject = audioStream;
-        audio.play();
+
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if (sourceNode) sourceNode.disconnect();
+        if (delayNode) delayNode.disconnect();
+        if (gainNode) gainNode.disconnect();
+
+        sourceNode = audioContext.createMediaStreamSource(audioStream);
+        delayNode = audioContext.createDelay();
+        delayNode.delayTime.value = 0.5; // Set the delay time in seconds
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = 1.0; // Set the volume (gain)
+
+        sourceNode.connect(delayNode);
+        delayNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
     } catch (error) {
         console.error('Error accessing audio devices.', error);
     }
@@ -39,5 +59,18 @@ stopAudioButton.addEventListener('click', () => {
     if (audioStream) {
         audioStream.getTracks().forEach(track => track.stop());
         audio.srcObject = null;
+
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+
+        if (sourceNode) sourceNode.disconnect();
+        if (delayNode) delayNode.disconnect();
+        if (gainNode) gainNode.disconnect();
+
+        sourceNode = null;
+        delayNode = null;
+        gainNode = null;
     }
 });
