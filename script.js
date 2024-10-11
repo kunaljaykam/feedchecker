@@ -12,47 +12,47 @@ let sourceNode;
 let delayNode;
 let gainNode;
 
-async function measureSingleRequestSpeed(testFileUrl, fileSizeInBytes) {
-    const startTime = new Date().getTime();
-    const response = await fetch(testFileUrl);
-    const endTime = new Date().getTime();
+// async function measureSingleRequestSpeed(testFileUrl, fileSizeInBytes) {
+//     const startTime = new Date().getTime();
+//     const response = await fetch(testFileUrl);
+//     const endTime = new Date().getTime();
 
-    if (!response.ok) {
-        throw new Error('Failed to download the test file.');
-    }
+//     if (!response.ok) {
+//         throw new Error('Failed to download the test file.');
+//     }
 
-    const durationInSeconds = (endTime - startTime) / 1000;
-    const speedBps = fileSizeInBytes / durationInSeconds;
-    return speedBps / (1024 * 1024); // Convert to Mbps
-}
+//     const durationInSeconds = (endTime - startTime) / 1000;
+//     const speedBps = fileSizeInBytes / durationInSeconds;
+//     return speedBps / (1024 * 1024); // Convert to Mbps
+// }
 
-async function measureInternetSpeed() {
-    const fileSizeInBytes = 1 * 1024 * 1024; // Size of the test file in bytes (1MB)
-    const testFileUrl = `https://elasticbeanstalk-us-west-2-357568096535.s3.amazonaws.com/png-1mb.png?rand=${Math.random()}`;
+// async function measureInternetSpeed() {
+//     const fileSizeInBytes = 1 * 1024 * 1024; // Size of the test file in bytes (1MB)
+//     const testFileUrl = `https://elasticbeanstalk-us-west-2-357568096535.s3.amazonaws.com/png-1mb.png?rand=${Math.random()}`;
 
-    const numRequests = 5;
-    let totalSpeedMbps = 0;
+//     const numRequests = 5;
+//     let totalSpeedMbps = 0;
 
-    for (let i = 0; i < numRequests; i++) {
-        const speedMbps = await measureSingleRequestSpeed(testFileUrl, fileSizeInBytes);
-        totalSpeedMbps += speedMbps;
-    }
+//     for (let i = 0; i < numRequests; i++) {
+//         const speedMbps = await measureSingleRequestSpeed(testFileUrl, fileSizeInBytes);
+//         totalSpeedMbps += speedMbps;
+//     }
 
-    const averageSpeedMbps = totalSpeedMbps / numRequests;
-    return averageSpeedMbps;
-}
+//     const averageSpeedMbps = totalSpeedMbps / numRequests;
+//     return averageSpeedMbps;
+// }
 
-async function updateSpeedHeader() {
-    try {
-        const speedMbps = await measureInternetSpeed();
-        speedHeader.textContent = `Your internet speed is approximately ${speedMbps.toFixed(2)} Mbps.`;
-    } catch (error) {
-        speedHeader.textContent = 'Unable to determine internet speed.';
-    }
-}
+// async function updateSpeedHeader() {
+//     try {
+//         const speedMbps = await measureInternetSpeed();
+//         speedHeader.textContent = `Your internet speed is approximately ${speedMbps.toFixed(2)} Mbps.`;
+//     } catch (error) {
+//         speedHeader.textContent = 'Unable to determine internet speed.';
+//     }
+// }
 
-// Check internet speed on page load
-window.addEventListener('load', updateSpeedHeader);
+// // Check internet speed on page load
+// window.addEventListener('load', updateSpeedHeader);
 
 startButton.addEventListener('click', async () => {
     try {
