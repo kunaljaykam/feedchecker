@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FeedChecker - Open Source Tool for Camera and Audio Testing</title>
+    <title>FeedChecker - Open Source Tool for Camera, Audio, and Browser Features Testing</title>
     <link rel="icon" type="image/png" href="assets/FeedChecker.png">
     <link rel="stylesheet" href="style.css">
-    <meta name="description" content="FeedChecker is an open-source online tool that ensures your camera and microphone are functioning properly.">
-    <meta name="keywords" content="camera test, audio test, video test, microphone test, online tool, open source">
+    <meta name="description" content="FeedChecker is an open-source online tool that tests your camera, microphone, browser notifications, and other essential browser features.">
+    <meta name="keywords" content="camera test, audio test, video test, microphone test, notification test, browser features, cookies test, localStorage test, WebRTC test, WebGL test, geolocation test, online tool, open source">
     <meta name="author" content="Kunal Jaykam">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4CAF50">
@@ -39,6 +39,54 @@
                     <button id="startAudioButton">Start Audio Check</button>
                     <button id="stopAudioButton">Stop Audio Check</button>
                     <audio id="audio" controls></audio>
+                </div>
+            </div>
+        </section>
+        
+        <section class="test-section">
+            <div class="test-container">
+                <div class="notification-test">
+                    <h2>Notification Test</h2>
+                    <button id="checkNotificationPermission">Check Permission</button>
+                    <button id="requestNotificationPermission">Request Permission</button>
+                    <button id="testNotification">Test Notification with Sound</button>
+                    <div id="notificationStatus" class="status-box"></div>
+                </div>
+                <div class="separator"></div>
+                <div class="browser-features">
+                    <h2>Browser Features Check</h2>
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <span>Cookies Enabled</span>
+                            <span id="cookieStatus" class="status-indicator"></span>
+                        </div>
+                        <div class="feature-item">
+                            <span>JavaScript Enabled</span>
+                            <span id="javascriptStatus" class="status-indicator"></span>
+                        </div>
+                        <div class="feature-item">
+                            <span>LocalStorage Available</span>
+                            <span id="localStorageStatus" class="status-indicator"></span>
+                        </div>
+                        <div class="feature-item">
+                            <span>WebRTC Support</span>
+                            <span id="webrtcStatus" class="status-indicator"></span>
+                        </div>
+                        <div class="feature-item">
+                            <span>WebGL Support</span>
+                            <span id="webglStatus" class="status-indicator"></span>
+                        </div>
+                        <div class="feature-item">
+                            <span>Geolocation</span>
+                            <span id="geolocationStatus" class="status-indicator"></span>
+                            <button id="checkGeolocation" class="mini-button">Check</button>
+                        </div>
+                        <div class="feature-item">
+                            <span>Audio Output Devices</span>
+                            <span id="audioOutputStatus" class="status-indicator"></span>
+                            <button id="checkAudioDevices" class="mini-button">Check</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
