@@ -155,6 +155,62 @@ footer a {
     margin-left: 10px;
 }
 
+/* File Generator Styles */
+.file-generator {
+    width: 100%;
+    padding: 20px;
+}
+
+.file-generator-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.input-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.input-group label {
+    margin-right: 10px;
+    min-width: 120px;
+    text-align: left;
+}
+
+.input-group input,
+.input-group select {
+    flex: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    background-color: #2C2C2C;
+    color: #F5F5F5;
+    font-family: inherit;
+}
+
+.download-section {
+    margin-top: 20px;
+}
+
+.download-section a {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.download-section a:hover {
+    background-color: #45a049;
+}
+
 @media (max-width: 768px) {
     header {
         flex-direction: column;

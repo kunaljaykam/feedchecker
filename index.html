@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FeedChecker - Open Source Tool for Camera, Audio, and Browser Features Testing</title>
+    <title>FeedChecker - Generate Test Files of Any Size & Format | Browser Testing Tool</title>
     <link rel="icon" type="image/png" href="assets/FeedChecker.png">
     <link rel="stylesheet" href="style.css">
-    <meta name="description" content="FeedChecker is an open-source online tool that tests your camera, microphone, browser notifications, and other essential browser features.">
-    <meta name="keywords" content="camera test, audio test, video test, microphone test, notification test, browser features, cookies test, localStorage test, WebRTC test, WebGL test, geolocation test, online tool, open source">
+    <meta name="description" content="FeedChecker lets you generate test files (audio, video, PDF, text) of any size for testing purposes. Also test your camera, microphone, browser features, and notifications.">
+    <meta name="keywords" content="test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, camera test, audio test, browser features test">
     <meta name="author" content="Kunal Jaykam">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4CAF50">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://feedchecker.org/">
+    <meta property="og:title" content="FeedChecker - Generate Test Files of Any Size & Format">
+    <meta property="og:description" content="Create test files of specific sizes in various formats for testing purposes. Generate audio, video, PDF, and text files instantly.">
+    <meta property="og:image" content="assets/FeedChecker.png">
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://feedchecker.org/">
+    <meta property="twitter:title" content="FeedChecker - Generate Test Files of Any Size & Format">
+    <meta property="twitter:description" content="Create test files of specific sizes in various formats for testing purposes. Generate audio, video, PDF, and text files instantly.">
+    <meta property="twitter:image" content="assets/FeedChecker.png">
 </head>
 <body>
     <header>
@@ -22,6 +34,37 @@
         </div>
     </header>
     <main>
+        <section class="test-section">
+            <div class="test-container">
+                <div class="file-generator">
+                    <h1>Test File Generator</h1>
+                    <p>Generate sample files of any size for testing purposes</p>
+                    
+                    <div class="file-generator-controls">
+                        <div class="input-group">
+                            <label for="fileSize">File Size (MB):</label>
+                            <input type="number" id="fileSize" min="0.1" max="100" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="fileType">File Type:</label>
+                            <select id="fileType">
+                                <option value="audio">Audio (WAV)</option>
+                                <option value="video">Video (WebM)</option>
+                                <option value="pdf">Document (PDF)</option>
+                                <option value="text">Text (TXT)</option>
+                            </select>
+                        </div>
+                        
+                        <button id="generateFileButton">Generate File</button>
+                    </div>
+                    
+                    <div id="generationStatus" class="status-box"></div>
+                    <div id="downloadLink" class="download-section"></div>
+                </div>
+            </div>
+        </section>
+
         <section class="test-section">
             <!-- <h1 id="speed-header">Calculating your approximate internet speed...</h1> -->
             <div class="test-container">
@@ -92,7 +135,7 @@
         </section>
     </main>
     <footer>
-        <p>An open-source project by <a href="https://kunaljaykam.com" target="_blank">Kunal Jaykam</a>. Your data stays with you, ensuring privacy and security.</p>
+        <p>An open-source project by <a href="https://kunaljaykam.com" target="_blank">Kunal Jaykam</a></p>
     </footer>
     <script src="script.js"></script>
 </body>
