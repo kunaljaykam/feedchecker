@@ -1,8 +1,33 @@
 # feedchecker.org
 
-FeedChecker is an open-source web tool for generating test files of any size and format, as well as testing your camera, audio feed, and browser features. This versatile application helps users quickly create sample files for testing and verify their device capabilities.
+FeedChecker is an open-source web tool for checking Linux hardware compatibility, generating test files of any size and format, and testing your camera, audio feed, and browser features. This versatile application helps users verify if their laptop/desktop hardware is compatible with Linux distributions, quickly create sample files for testing, and verify their device capabilities.
 
 ## Features
+
+### Linux Hardware Compatibility Checker
+- **Comprehensive Hardware Detection**: Scans your system's hardware components including:
+  - CPU (Intel, AMD, ARM processors)
+  - GPU (NVIDIA, AMD, Intel graphics cards)
+  - WiFi cards (Intel, Broadcom, Realtek, Qualcomm, MediaTek)
+  - Audio/Speaker hardware
+  - Bluetooth devices
+  - Touchscreen support
+  - Battery status (laptop vs desktop detection)
+  - Screen resolution and pixel ratio
+  - Memory (RAM) and CPU cores
+
+- **Linux Compatibility Analysis**:
+  - Identifies which hardware components work well with Linux
+  - Highlights potential issues (e.g., proprietary drivers needed)
+  - Provides compatibility ratings (Excellent, Good, Fair, Poor)
+  - Recommends specific Linux distributions for your hardware
+  - Offers detailed notes on driver requirements and known issues
+
+- **Detailed Guidance**:
+  - Links to Linux hardware databases (linux-hardware.org, h-node.org)
+  - Lists beginner-friendly Linux distributions
+  - Pre-installation checklist for testing hardware
+  - Instructions for creating Live USB for hardware testing
 
 ### Test File Generator
 - Generate test files of specific sizes (0.1MB to 100MB)
@@ -39,6 +64,22 @@ FeedChecker is an open-source web tool for generating test files of any size and
 - Camera and microphone access permissions (for media testing features)
 
 ### Usage
+
+#### Linux Hardware Compatibility Checker
+1. Visit [FeedChecker](https://feedchecker.org)
+2. Scroll to the "Linux Hardware Compatibility Checker" section
+3. Click "Scan Hardware"
+4. Review the detected hardware information
+5. Check the compatibility analysis for:
+   - GPU compatibility and recommended drivers
+   - CPU support level
+   - WiFi card compatibility by manufacturer
+   - Audio/Speaker support
+   - Bluetooth compatibility
+   - Touchscreen support (if applicable)
+6. Read the recommended Linux distributions for your hardware
+7. Follow the provided links to verify specific hardware on Linux databases
+8. Use the pre-installation checklist before installing Linux
 
 #### Generating Test Files
 1. Visit [FeedChecker](https://feedchecker.org)

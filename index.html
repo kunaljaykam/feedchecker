@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FeedChecker - Generate Test Files of Any Size & Format | Browser Testing Tool</title>
+    <title>FeedChecker - Linux Hardware Compatibility Checker | Test File Generator | Browser Testing</title>
     <link rel="icon" type="image/png" href="assets/FeedChecker.png">
     <link rel="stylesheet" href="style.css">
-    <meta name="description" content="FeedChecker lets you generate test files (audio, video, PDF, text) of any size for testing purposes. Also test your camera, microphone, browser features, and notifications.">
-    <meta name="keywords" content="test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, camera test, audio test, browser features test">
+    <meta name="description" content="Check if your laptop hardware is compatible with Linux! Scan CPU, GPU, WiFi, speakers & more. Also generate test files (audio, video, PDF, text) and test browser features.">
+    <meta name="keywords" content="linux hardware compatibility, linux laptop checker, linux support checker, wifi linux compatibility, gpu linux support, test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, camera test, audio test, browser features test">
     <meta name="author" content="Kunal Jaykam">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4CAF50">
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://feedchecker.org/">
-    <meta property="og:title" content="FeedChecker - Generate Test Files of Any Size & Format">
-    <meta property="og:description" content="Create test files of specific sizes in various formats for testing purposes. Generate audio, video, PDF, and text files instantly.">
+    <meta property="og:title" content="FeedChecker - Linux Hardware Compatibility Checker & Test File Generator">
+    <meta property="og:description" content="Check if your laptop/desktop hardware is compatible with Linux distributions. Scan CPU, GPU, WiFi, audio & more. Also generate test files instantly.">
     <meta property="og:image" content="assets/FeedChecker.png">
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://feedchecker.org/">
-    <meta property="twitter:title" content="FeedChecker - Generate Test Files of Any Size & Format">
-    <meta property="twitter:description" content="Create test files of specific sizes in various formats for testing purposes. Generate audio, video, PDF, and text files instantly.">
+    <meta property="twitter:title" content="FeedChecker - Linux Hardware Compatibility Checker & Test File Generator">
+    <meta property="twitter:description" content="Check if your laptop/desktop hardware is compatible with Linux distributions. Scan CPU, GPU, WiFi, audio & more. Also generate test files instantly.">
     <meta property="twitter:image" content="assets/FeedChecker.png">
 </head>
 <body>
@@ -129,6 +129,25 @@
                             <span id="audioOutputStatus" class="status-indicator"></span>
                             <button id="checkAudioDevices" class="mini-button">Check</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="test-section">
+            <div class="test-container">
+                <div class="hardware-compatibility">
+                    <h2>Linux Hardware Compatibility Checker</h2>
+                    <p>Check if your laptop/desktop hardware is compatible with Linux distributions</p>
+
+                    <button id="scanHardwareButton">Scan Hardware</button>
+
+                    <div id="hardwareStatus" class="status-box"></div>
+
+                    <div id="hardwareResults" class="hardware-results">
+                        <div id="systemInfo" class="hardware-section"></div>
+                        <div id="compatibilityInfo" class="hardware-section"></div>
+                        <div id="detailedHardware" class="hardware-section"></div>
                     </div>
                 </div>
             </div>

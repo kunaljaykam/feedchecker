@@ -211,11 +211,132 @@ footer a {
     background-color: #45a049;
 }
 
+/* Hardware Compatibility Checker Styles */
+.hardware-compatibility {
+    width: 100%;
+    padding: 20px;
+}
+
+.hardware-results {
+    margin-top: 20px;
+}
+
+.hardware-section {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #2C2C2C;
+    border-radius: 5px;
+}
+
+.hardware-section h3 {
+    color: #FFA500;
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #FFA500;
+    padding-bottom: 5px;
+}
+
+.hardware-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #3A3A3A;
+}
+
+.hardware-item:last-child {
+    border-bottom: none;
+}
+
+.hardware-label {
+    font-weight: bold;
+    color: #FFA500;
+}
+
+.hardware-value {
+    color: #F5F5F5;
+    text-align: right;
+}
+
+.compatibility-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.compatibility-badge.excellent {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.compatibility-badge.good {
+    background-color: #8BC34A;
+    color: white;
+}
+
+.compatibility-badge.fair {
+    background-color: #FFC107;
+    color: #1F1F1F;
+}
+
+.compatibility-badge.poor {
+    background-color: #FF9800;
+    color: white;
+}
+
+.compatibility-badge.unknown {
+    background-color: #9E9E9E;
+    color: white;
+}
+
+.distro-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.distro-item {
+    padding: 8px;
+    margin: 5px 0;
+    background-color: #3A3A3A;
+    border-radius: 5px;
+    border-left: 4px solid #FFA500;
+}
+
+.warning-box {
+    background-color: #FF9800;
+    color: #1F1F1F;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.info-box {
+    background-color: #2196F3;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.external-link {
+    color: #FFA500;
+    text-decoration: none;
+    margin: 0 5px;
+}
+
+.external-link:hover {
+    text-decoration: underline;
+}
+
 @media (max-width: 768px) {
     header {
         flex-direction: column;
     }
-    
+
     .test-container {
         flex-direction: column;
         align-items: center;
@@ -233,5 +354,15 @@ footer a {
 
     .feature-grid {
         grid-template-columns: 1fr;
+    }
+
+    .hardware-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .hardware-value {
+        text-align: left;
+        margin-top: 5px;
     }
 }

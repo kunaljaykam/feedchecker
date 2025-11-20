@@ -695,3 +695,465 @@ async function generateFile() {
 
 // Event listener for file generation
 generateFileButton.addEventListener('click', generateFile);
+
+// ==================== Linux Hardware Compatibility Checker ====================
+
+const scanHardwareButton = document.getElementById('scanHardwareButton');
+const hardwareStatus = document.getElementById('hardwareStatus');
+const systemInfo = document.getElementById('systemInfo');
+const compatibilityInfo = document.getElementById('compatibilityInfo');
+const detailedHardware = document.getElementById('detailedHardware');
+
+// Hardware detection and compatibility database
+const linuxCompatibilityDB = {
+    gpu: {
+        nvidia: {
+            compatibility: 'fair',
+            notes: 'NVIDIA GPUs require proprietary drivers. Works well but requires additional setup.',
+            recommended: ['Ubuntu', 'Pop!_OS', 'Fedora', 'Manjaro'],
+            issues: 'Wayland compositor may have issues. Nouveau (open-source driver) has limited performance.'
+        },
+        amd: {
+            compatibility: 'excellent',
+            notes: 'AMD GPUs have excellent open-source driver support built into the kernel.',
+            recommended: ['Ubuntu', 'Fedora', 'Arch Linux', 'Pop!_OS', 'Manjaro'],
+            issues: 'Very few issues. Latest GPUs may need newer kernels.'
+        },
+        intel: {
+            compatibility: 'excellent',
+            notes: 'Intel integrated graphics have excellent native Linux support.',
+            recommended: ['All major distributions'],
+            issues: 'Almost none. Works out of the box.'
+        },
+        generic: {
+            compatibility: 'good',
+            notes: 'Most GPUs work with Linux, but performance varies.',
+            recommended: ['Ubuntu', 'Linux Mint', 'Fedora'],
+            issues: 'May need proprietary drivers for optimal performance.'
+        }
+    },
+    wifi: {
+        intel: {
+            compatibility: 'excellent',
+            notes: 'Intel WiFi cards have excellent Linux support.',
+            recommended: ['All major distributions'],
+            issues: 'Rare firmware issues on very new models.'
+        },
+        broadcom: {
+            compatibility: 'fair',
+            notes: 'Broadcom WiFi requires proprietary drivers.',
+            recommended: ['Ubuntu', 'Pop!_OS', 'Linux Mint'],
+            issues: 'May require manual driver installation. Works better on Debian-based distros.'
+        },
+        realtek: {
+            compatibility: 'good',
+            notes: 'Realtek WiFi generally works well but may need additional drivers.',
+            recommended: ['Ubuntu', 'Fedora', 'Manjaro'],
+            issues: 'Some models require manual driver compilation.'
+        },
+        qualcomm: {
+            compatibility: 'good',
+            notes: 'Qualcomm Atheros WiFi has good open-source support.',
+            recommended: ['All major distributions'],
+            issues: 'Older models work better than newer ones.'
+        },
+        mediatek: {
+            compatibility: 'good',
+            notes: 'MediaTek WiFi support is improving rapidly.',
+            recommended: ['Ubuntu 22.04+', 'Fedora 36+', 'Kernel 5.15+'],
+            issues: 'Newer models may need kernel 5.15 or higher.'
+        }
+    },
+    cpu: {
+        intel: {
+            compatibility: 'excellent',
+            notes: 'Intel CPUs have native Linux support.',
+            recommended: ['All distributions'],
+            issues: 'None for most models.'
+        },
+        amd: {
+            compatibility: 'excellent',
+            notes: 'AMD CPUs (especially Ryzen) have excellent Linux support.',
+            recommended: ['All distributions'],
+            issues: 'Very new Ryzen models may need kernel updates.'
+        },
+        arm: {
+            compatibility: 'good',
+            notes: 'ARM support is growing, especially for newer chips.',
+            recommended: ['Ubuntu', 'Fedora', 'Debian'],
+            issues: 'Limited software compatibility compared to x86.'
+        }
+    },
+    bluetooth: {
+        intel: {
+            compatibility: 'excellent',
+            notes: 'Intel Bluetooth works seamlessly.',
+            recommended: ['All distributions']
+        },
+        realtek: {
+            compatibility: 'good',
+            notes: 'Generally works but may have occasional connection issues.',
+            recommended: ['Ubuntu', 'Fedora']
+        },
+        broadcom: {
+            compatibility: 'fair',
+            notes: 'May require additional setup.',
+            recommended: ['Ubuntu', 'Debian']
+        }
+    }
+};
+
+async function detectHardware() {
+    const hardware = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        cpuCores: navigator.hardwareConcurrency || 'Unknown',
+        memory: navigator.deviceMemory || 'Unknown',
+        maxTouchPoints: navigator.maxTouchPoints || 0,
+        gpu: null,
+        screenResolution: `${screen.width}x${screen.height}`,
+        colorDepth: screen.colorDepth,
+        pixelRatio: window.devicePixelRatio || 1,
+        battery: null,
+        mediaDevices: [],
+        languages: navigator.languages || [navigator.language]
+    };
+
+    // Detect GPU using WebGL
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (gl) {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+                hardware.gpu = {
+                    vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                    renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                };
+            }
+        }
+    } catch (e) {
+        hardware.gpu = { vendor: 'Unknown', renderer: 'Detection failed' };
+    }
+
+    // Detect Battery (indicates laptop vs desktop)
+    if ('getBattery' in navigator) {
+        try {
+            const battery = await navigator.getBattery();
+            hardware.battery = {
+                charging: battery.charging,
+                level: Math.round(battery.level * 100),
+                chargingTime: battery.chargingTime,
+                dischargingTime: battery.dischargingTime
+            };
+        } catch (e) {
+            hardware.battery = null;
+        }
+    }
+
+    // Detect media devices (camera, microphone, speakers)
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            hardware.mediaDevices = devices.map(device => ({
+                kind: device.kind,
+                label: device.label || `${device.kind} (permission required)`
+            }));
+        } catch (e) {
+            hardware.mediaDevices = [];
+        }
+    }
+
+    return hardware;
+}
+
+function analyzeGPUCompatibility(gpu) {
+    if (!gpu || !gpu.renderer) {
+        return linuxCompatibilityDB.gpu.generic;
+    }
+
+    const renderer = gpu.renderer.toLowerCase();
+    const vendor = gpu.vendor.toLowerCase();
+
+    if (vendor.includes('nvidia') || renderer.includes('nvidia') || renderer.includes('geforce') || renderer.includes('quadro')) {
+        return { ...linuxCompatibilityDB.gpu.nvidia, detected: 'NVIDIA' };
+    } else if (vendor.includes('amd') || vendor.includes('ati') || renderer.includes('radeon') || renderer.includes('amd')) {
+        return { ...linuxCompatibilityDB.gpu.amd, detected: 'AMD' };
+    } else if (vendor.includes('intel') || renderer.includes('intel')) {
+        return { ...linuxCompatibilityDB.gpu.intel, detected: 'Intel' };
+    }
+
+    return { ...linuxCompatibilityDB.gpu.generic, detected: 'Unknown' };
+}
+
+function analyzeCPUCompatibility(userAgent, platform) {
+    const ua = userAgent.toLowerCase();
+    const plat = platform.toLowerCase();
+
+    if (ua.includes('amd') || plat.includes('amd')) {
+        return { ...linuxCompatibilityDB.cpu.amd, detected: 'AMD' };
+    } else if (ua.includes('intel') || plat.includes('intel') || plat.includes('x86') || plat.includes('win')) {
+        return { ...linuxCompatibilityDB.cpu.intel, detected: 'Intel' };
+    } else if (plat.includes('arm') || plat.includes('linux armv')) {
+        return { ...linuxCompatibilityDB.cpu.arm, detected: 'ARM' };
+    }
+
+    return { ...linuxCompatibilityDB.cpu.intel, detected: 'x86/x64 (likely Intel or AMD)' };
+}
+
+function analyzeWiFiCompatibility(userAgent) {
+    const ua = userAgent.toLowerCase();
+
+    // Note: WiFi detection from browser is limited
+    // We provide general guidance based on common manufacturers
+    return {
+        note: 'WiFi card detection from browser is limited. Common compatibility info:',
+        manufacturers: [
+            { name: 'Intel WiFi', ...linuxCompatibilityDB.wifi.intel },
+            { name: 'Broadcom', ...linuxCompatibilityDB.wifi.broadcom },
+            { name: 'Realtek', ...linuxCompatibilityDB.wifi.realtek },
+            { name: 'Qualcomm Atheros', ...linuxCompatibilityDB.wifi.qualcomm },
+            { name: 'MediaTek', ...linuxCompatibilityDB.wifi.mediatek }
+        ]
+    };
+}
+
+function getCompatibilityBadge(compatibility) {
+    const badges = {
+        excellent: '<span class="compatibility-badge excellent">Excellent</span>',
+        good: '<span class="compatibility-badge good">Good</span>',
+        fair: '<span class="compatibility-badge fair">Fair</span>',
+        poor: '<span class="compatibility-badge poor">Poor</span>',
+        unknown: '<span class="compatibility-badge unknown">Unknown</span>'
+    };
+    return badges[compatibility] || badges.unknown;
+}
+
+function displayHardwareInfo(hardware) {
+    // System Information
+    let systemHTML = '<h3>System Information</h3>';
+
+    systemHTML += `
+        <div class="hardware-item">
+            <span class="hardware-label">Platform:</span>
+            <span class="hardware-value">${hardware.platform}</span>
+        </div>
+        <div class="hardware-item">
+            <span class="hardware-label">CPU Cores:</span>
+            <span class="hardware-value">${hardware.cpuCores}</span>
+        </div>
+        <div class="hardware-item">
+            <span class="hardware-label">Memory (RAM):</span>
+            <span class="hardware-value">${hardware.memory !== 'Unknown' ? hardware.memory + ' GB' : 'Unknown'}</span>
+        </div>
+        <div class="hardware-item">
+            <span class="hardware-label">Screen Resolution:</span>
+            <span class="hardware-value">${hardware.screenResolution}</span>
+        </div>
+        <div class="hardware-item">
+            <span class="hardware-label">Pixel Ratio:</span>
+            <span class="hardware-value">${hardware.pixelRatio}</span>
+        </div>
+    `;
+
+    if (hardware.gpu) {
+        systemHTML += `
+            <div class="hardware-item">
+                <span class="hardware-label">GPU Vendor:</span>
+                <span class="hardware-value">${hardware.gpu.vendor}</span>
+            </div>
+            <div class="hardware-item">
+                <span class="hardware-label">GPU Renderer:</span>
+                <span class="hardware-value">${hardware.gpu.renderer}</span>
+            </div>
+        `;
+    }
+
+    if (hardware.battery) {
+        systemHTML += `
+            <div class="hardware-item">
+                <span class="hardware-label">Device Type:</span>
+                <span class="hardware-value">Laptop (Battery detected)</span>
+            </div>
+            <div class="hardware-item">
+                <span class="hardware-label">Battery Level:</span>
+                <span class="hardware-value">${hardware.battery.level}% ${hardware.battery.charging ? '(Charging)' : ''}</span>
+            </div>
+        `;
+    } else {
+        systemHTML += `
+            <div class="hardware-item">
+                <span class="hardware-label">Device Type:</span>
+                <span class="hardware-value">Desktop or Battery info unavailable</span>
+            </div>
+        `;
+    }
+
+    systemHTML += `
+        <div class="hardware-item">
+            <span class="hardware-label">Touch Support:</span>
+            <span class="hardware-value">${hardware.maxTouchPoints > 0 ? 'Yes (' + hardware.maxTouchPoints + ' points)' : 'No'}</span>
+        </div>
+    `;
+
+    systemInfo.innerHTML = systemHTML;
+}
+
+function displayCompatibilityInfo(hardware) {
+    const gpuCompat = analyzeGPUCompatibility(hardware.gpu);
+    const cpuCompat = analyzeCPUCompatibility(hardware.userAgent, hardware.platform);
+    const wifiCompat = analyzeWiFiCompatibility(hardware.userAgent);
+
+    let compatHTML = '<h3>Linux Compatibility Analysis</h3>';
+
+    // Overall Assessment
+    const overallScore = gpuCompat.compatibility;
+    compatHTML += `
+        <div class="info-box">
+            <strong>Overall Linux Compatibility:</strong> ${getCompatibilityBadge(overallScore)}
+            <br><br>
+            This assessment is based on detected hardware. Most modern hardware works well with Linux.
+        </div>
+    `;
+
+    // GPU Compatibility
+    compatHTML += `
+        <h4>Graphics (GPU) - ${gpuCompat.detected} ${getCompatibilityBadge(gpuCompat.compatibility)}</h4>
+        <p><strong>Notes:</strong> ${gpuCompat.notes}</p>
+    `;
+
+    if (gpuCompat.issues) {
+        compatHTML += `<div class="warning-box"><strong>Potential Issues:</strong> ${gpuCompat.issues}</div>`;
+    }
+
+    if (gpuCompat.recommended) {
+        compatHTML += '<p><strong>Recommended Distributions:</strong></p><ul class="distro-list">';
+        gpuCompat.recommended.forEach(distro => {
+            compatHTML += `<li class="distro-item">${distro}</li>`;
+        });
+        compatHTML += '</ul>';
+    }
+
+    // CPU Compatibility
+    compatHTML += `
+        <h4>Processor (CPU) - ${cpuCompat.detected} ${getCompatibilityBadge(cpuCompat.compatibility)}</h4>
+        <p><strong>Notes:</strong> ${cpuCompat.notes}</p>
+    `;
+
+    if (cpuCompat.issues) {
+        compatHTML += `<div class="warning-box"><strong>Potential Issues:</strong> ${cpuCompat.issues}</div>`;
+    }
+
+    // WiFi Compatibility
+    compatHTML += '<h4>WiFi Compatibility</h4>';
+    compatHTML += `<p>${wifiCompat.note}</p>`;
+    compatHTML += '<div style="margin-top: 10px;">';
+
+    wifiCompat.manufacturers.forEach(mfr => {
+        compatHTML += `
+            <div style="margin: 10px 0; padding: 10px; background-color: #3A3A3A; border-radius: 5px;">
+                <strong>${mfr.name}</strong> ${getCompatibilityBadge(mfr.compatibility)}
+                <br><small>${mfr.notes}</small>
+                ${mfr.issues ? '<br><small style="color: #FFA500;">Issues: ' + mfr.issues + '</small>' : ''}
+            </div>
+        `;
+    });
+    compatHTML += '</div>';
+
+    // Audio/Speaker Compatibility
+    compatHTML += `
+        <h4>Audio/Speakers ${getCompatibilityBadge('excellent')}</h4>
+        <p>Most audio hardware works excellently with Linux using ALSA and PulseAudio/PipeWire.</p>
+    `;
+
+    const audioDevices = hardware.mediaDevices.filter(d => d.kind === 'audiooutput' || d.kind === 'audioinput');
+    if (audioDevices.length > 0) {
+        compatHTML += `<p>Detected ${audioDevices.length} audio device(s).</p>`;
+    }
+
+    // Bluetooth Compatibility
+    compatHTML += `
+        <h4>Bluetooth ${getCompatibilityBadge('good')}</h4>
+        <p>Bluetooth support in Linux is generally good. Intel and Qualcomm chipsets work best.</p>
+        <p><small>Note: Some Broadcom Bluetooth devices may require additional drivers.</small></p>
+    `;
+
+    // Touchscreen/Touchpad
+    if (hardware.maxTouchPoints > 0) {
+        compatHTML += `
+            <h4>Touchscreen ${getCompatibilityBadge('good')}</h4>
+            <p>Touchscreen detected. Most touchscreens work well with Linux, especially on GNOME and KDE.</p>
+        `;
+    }
+
+    compatibilityInfo.innerHTML = compatHTML;
+}
+
+function displayDetailedGuidance() {
+    let guidanceHTML = '<h3>Additional Resources & Recommendations</h3>';
+
+    guidanceHTML += `
+        <div class="info-box">
+            <strong>Hardware Databases:</strong><br>
+            Check your specific hardware on these databases:<br>
+            <a href="https://linux-hardware.org/" target="_blank" class="external-link">Linux Hardware Database</a> |
+            <a href="https://www.h-node.org/" target="_blank" class="external-link">h-node.org</a> |
+            <a href="https://wiki.archlinux.org/title/Laptop" target="_blank" class="external-link">Arch Linux Laptop Wiki</a>
+        </div>
+
+        <div class="info-box">
+            <strong>Beginner-Friendly Distributions:</strong>
+            <ul class="distro-list">
+                <li class="distro-item"><strong>Ubuntu</strong> - Most popular, great community support</li>
+                <li class="distro-item"><strong>Linux Mint</strong> - Very user-friendly, Windows-like</li>
+                <li class="distro-item"><strong>Pop!_OS</strong> - Excellent for NVIDIA GPUs and gaming</li>
+                <li class="distro-item"><strong>Fedora</strong> - Cutting-edge, sponsored by Red Hat</li>
+                <li class="distro-item"><strong>Manjaro</strong> - User-friendly Arch-based distro</li>
+            </ul>
+        </div>
+
+        <div class="warning-box">
+            <strong>Before Installing Linux:</strong><br>
+            1. Create a live USB and test your hardware before installing<br>
+            2. Check WiFi, graphics, audio, and special keys (brightness, volume)<br>
+            3. Test suspend/resume functionality<br>
+            4. Verify touchpad gestures work (for laptops)<br>
+            5. Check if fingerprint reader is needed (limited support)
+        </div>
+
+        <div class="info-box">
+            <strong>Testing Your Hardware:</strong><br>
+            You can create a Live USB without installing Linux to test all your hardware.<br>
+            Download a distro ISO and use tools like:<br>
+            • Rufus (Windows)<br>
+            • balenaEtcher (Cross-platform)<br>
+            • dd command (Linux/Mac)
+        </div>
+    `;
+
+    detailedHardware.innerHTML = guidanceHTML;
+}
+
+async function scanHardware() {
+    try {
+        hardwareStatus.textContent = 'Scanning hardware...';
+        systemInfo.innerHTML = '';
+        compatibilityInfo.innerHTML = '';
+        detailedHardware.innerHTML = '';
+
+        const hardware = await detectHardware();
+
+        hardwareStatus.textContent = 'Hardware scan complete!';
+
+        displayHardwareInfo(hardware);
+        displayCompatibilityInfo(hardware);
+        displayDetailedGuidance();
+
+    } catch (error) {
+        hardwareStatus.textContent = `Error scanning hardware: ${error.message}`;
+        console.error('Hardware scan error:', error);
+    }
+}
+
+// Event listener for hardware scan
+scanHardwareButton.addEventListener('click', scanHardware);
