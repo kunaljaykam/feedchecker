@@ -695,3 +695,284 @@ async function generateFile() {
 
 // Event listener for file generation
 generateFileButton.addEventListener('click', generateFile);
+
+// ── Image Combiner ────────────────────────────────────────────────────────────
+
+const imageInput1 = document.getElementById('imageInput1');
+const imageInput2 = document.getElementById('imageInput2');
+const imagePreview1 = document.getElementById('imagePreview1');
+const imagePreview2 = document.getElementById('imagePreview2');
+const imagePlaceholder1 = document.getElementById('imagePlaceholder1');
+const imagePlaceholder2 = document.getElementById('imagePlaceholder2');
+const combineLayout = document.getElementById('combineLayout');
+const combineFormat = document.getElementById('combineFormat');
+const combineImagesButton = document.getElementById('combineImagesButton');
+const combinerStatus = document.getElementById('combinerStatus');
+const combinerDownload = document.getElementById('combinerDownload');
+
+let loadedImage1 = null;
+let loadedImage2 = null;
+
+function loadImageFromFile(file, imgEl, placeholderEl) {
+    return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) {
+            reject(new Error('File is not an image'));
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                imgEl.src = e.target.result;
+                imgEl.style.display = 'block';
+                placeholderEl.style.display = 'none';
+                resolve(img);
+            };
+            img.onerror = () => reject(new Error('Failed to decode image'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+imageInput1.addEventListener('change', async (e) => {
+    if (e.target.files[0]) {
+        try {
+            loadedImage1 = await loadImageFromFile(e.target.files[0], imagePreview1, imagePlaceholder1);
+        } catch (err) {
+            combinerStatus.textContent = `Error loading image 1: ${err.message}`;
+        }
+    }
+});
+
+imageInput2.addEventListener('change', async (e) => {
+    if (e.target.files[0]) {
+        try {
+            loadedImage2 = await loadImageFromFile(e.target.files[0], imagePreview2, imagePlaceholder2);
+        } catch (err) {
+            combinerStatus.textContent = `Error loading image 2: ${err.message}`;
+        }
+    }
+});
+
+function setupDropZone(dropZoneId, imgEl, placeholderEl, slot) {
+    const zone = document.getElementById(dropZoneId);
+    zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            try {
+                const img = await loadImageFromFile(file, imgEl, placeholderEl);
+                if (slot === 1) loadedImage1 = img;
+                else loadedImage2 = img;
+            } catch (err) {
+                combinerStatus.textContent = `Error loading image: ${err.message}`;
+            }
+        }
+    });
+}
+
+setupDropZone('dropZone1', imagePreview1, imagePlaceholder1, 1);
+setupDropZone('dropZone2', imagePreview2, imagePlaceholder2, 2);
+
+// Auto-switch to PDF when "Separate Pages" layout is chosen
+combineLayout.addEventListener('change', () => {
+    if (combineLayout.value === 'pages') {
+        combineFormat.value = 'pdf';
+    }
+});
+
+function drawCombinedCanvas(img1, img2, layout) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (layout === 'side-by-side') {
+        canvas.width = img1.naturalWidth + img2.naturalWidth;
+        canvas.height = Math.max(img1.naturalHeight, img2.naturalHeight);
+        ctx.drawImage(img1, 0, 0);
+        ctx.drawImage(img2, img1.naturalWidth, 0);
+    } else {
+        canvas.width = Math.max(img1.naturalWidth, img2.naturalWidth);
+        canvas.height = img1.naturalHeight + img2.naturalHeight;
+        ctx.drawImage(img1, 0, 0);
+        ctx.drawImage(img2, 0, img1.naturalHeight);
+    }
+
+    return canvas;
+}
+
+async function imageToJpegBytes(img) {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+    return new Uint8Array(await blob.arrayBuffer());
+}
+
+function bytesToAsciiHex(bytes) {
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+        hex += bytes[i].toString(16).padStart(2, '0').toUpperCase();
+    }
+    return hex + '>'; // ASCIIHex end-of-data marker
+}
+
+function pdfImageXObject(objId, w, h, hexData) {
+    return (
+        `${objId} 0 obj\n` +
+        `<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h}` +
+        ` /ColorSpace /DeviceRGB /BitsPerComponent 8` +
+        ` /Filter [/ASCIIHexDecode /DCTDecode] /Length ${hexData.length} >>\n` +
+        `stream\n${hexData}\nendstream\nendobj\n`
+    );
+}
+
+function buildXref(offsets, count) {
+    let xref = `xref\n0 ${count}\n`;
+    xref += '0000000000 65535 f \n';
+    for (let i = 1; i < count; i++) {
+        xref += offsets[i].toString().padStart(10, '0') + ' 00000 n \n';
+    }
+    return xref;
+}
+
+async function buildPDF(img1, img2, layout) {
+    if (layout === 'pages') {
+        // Two-page PDF — one image per page
+        const [bytes1, bytes2] = await Promise.all([imageToJpegBytes(img1), imageToJpegBytes(img2)]);
+        const hex1 = bytesToAsciiHex(bytes1);
+        const hex2 = bytesToAsciiHex(bytes2);
+        const w1 = img1.naturalWidth, h1 = img1.naturalHeight;
+        const w2 = img2.naturalWidth, h2 = img2.naturalHeight;
+
+        const offsets = new Array(9).fill(0);
+        let pdf = '%PDF-1.4\n';
+
+        offsets[1] = pdf.length;
+        pdf += '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
+
+        offsets[2] = pdf.length;
+        pdf += '2 0 obj\n<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>\nendobj\n';
+
+        offsets[3] = pdf.length;
+        pdf += `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w1} ${h1}] /Contents 4 0 R /Resources << /XObject << /Im1 5 0 R >> >> >>\nendobj\n`;
+
+        const c1 = `q\n${w1} 0 0 ${h1} 0 0 cm\n/Im1 Do\nQ\n`;
+        offsets[4] = pdf.length;
+        pdf += `4 0 obj\n<< /Length ${c1.length} >>\nstream\n${c1}\nendstream\nendobj\n`;
+
+        offsets[5] = pdf.length;
+        pdf += pdfImageXObject(5, w1, h1, hex1);
+
+        offsets[6] = pdf.length;
+        pdf += `6 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w2} ${h2}] /Contents 7 0 R /Resources << /XObject << /Im2 8 0 R >> >> >>\nendobj\n`;
+
+        const c2 = `q\n${w2} 0 0 ${h2} 0 0 cm\n/Im2 Do\nQ\n`;
+        offsets[7] = pdf.length;
+        pdf += `7 0 obj\n<< /Length ${c2.length} >>\nstream\n${c2}\nendstream\nendobj\n`;
+
+        offsets[8] = pdf.length;
+        pdf += pdfImageXObject(8, w2, h2, hex2);
+
+        const xrefOffset = pdf.length;
+        pdf += buildXref(offsets, 9);
+        pdf += `trailer\n<< /Size 9 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+
+        return new Blob([pdf], { type: 'application/pdf' });
+    } else {
+        // Single-page PDF with both images combined on one canvas
+        const canvas = drawCombinedCanvas(img1, img2, layout);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const hexData = bytesToAsciiHex(bytes);
+        const pw = canvas.width, ph = canvas.height;
+
+        const offsets = new Array(6).fill(0);
+        let pdf = '%PDF-1.4\n';
+
+        offsets[1] = pdf.length;
+        pdf += '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
+
+        offsets[2] = pdf.length;
+        pdf += '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
+
+        offsets[3] = pdf.length;
+        pdf += `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Contents 4 0 R /Resources << /XObject << /Im0 5 0 R >> >> >>\nendobj\n`;
+
+        const content = `q\n${pw} 0 0 ${ph} 0 0 cm\n/Im0 Do\nQ\n`;
+        offsets[4] = pdf.length;
+        pdf += `4 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`;
+
+        offsets[5] = pdf.length;
+        pdf += pdfImageXObject(5, pw, ph, hexData);
+
+        const xrefOffset = pdf.length;
+        pdf += buildXref(offsets, 6);
+        pdf += `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+
+        return new Blob([pdf], { type: 'application/pdf' });
+    }
+}
+
+combineImagesButton.addEventListener('click', async () => {
+    if (!loadedImage1 || !loadedImage2) {
+        combinerStatus.textContent = 'Please select both images before combining.';
+        return;
+    }
+
+    const layout = combineLayout.value;
+    const format = combineFormat.value;
+
+    if (layout === 'pages' && format !== 'pdf') {
+        combinerStatus.textContent = 'Separate pages layout requires PDF output. Switching to PDF.';
+        combineFormat.value = 'pdf';
+        return;
+    }
+
+    combinerStatus.textContent = 'Combining images…';
+    combinerDownload.innerHTML = '';
+
+    try {
+        let blob, fileName;
+
+        if (format === 'pdf') {
+            blob = await buildPDF(loadedImage1, loadedImage2, layout);
+            fileName = 'combined.pdf';
+        } else {
+            const canvas = drawCombinedCanvas(loadedImage1, loadedImage2, layout);
+
+            if (format === 'png') {
+                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                fileName = 'combined.png';
+            } else if (format === 'webp') {
+                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 1.0));
+                fileName = 'combined.webp';
+            } else {
+                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+                fileName = 'combined.jpg';
+            }
+        }
+
+        const url = URL.createObjectURL(blob);
+        const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+        combinerStatus.textContent = `Done! Output size: ${sizeMB} MB`;
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.textContent = `Download ${fileName}`;
+        link.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(url), 100));
+        combinerDownload.appendChild(link);
+    } catch (err) {
+        combinerStatus.textContent = `Error: ${err.message}`;
+        console.error('Image combiner error:', err);
+    }
+});

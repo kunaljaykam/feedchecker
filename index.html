@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FeedChecker - Generate Test Files of Any Size & Format | Browser Testing Tool</title>
+    <title>FeedChecker - Test File Generator, Image Combiner & Browser Testing Tool</title>
     <link rel="icon" type="image/png" href="assets/FeedChecker.png">
     <link rel="stylesheet" href="style.css">
-    <meta name="description" content="FeedChecker lets you generate test files (audio, video, PDF, text) of any size for testing purposes. Also test your camera, microphone, browser features, and notifications.">
-    <meta name="keywords" content="test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, camera test, audio test, browser features test">
+    <meta name="description" content="FeedChecker lets you generate test files (audio, video, PDF, text) of any size, combine two images into a single PDF, PNG, WebP, or JPEG with no quality loss, test your camera, microphone, browser features, and notifications.">
+    <meta name="keywords" content="test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, image combiner, combine images, merge images, images to pdf, images to jpeg, lossless image merge, camera test, audio test, browser features test">
     <meta name="author" content="Kunal Jaykam">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4CAF50">
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://feedchecker.org/">
-    <meta property="og:title" content="FeedChecker - Generate Test Files of Any Size & Format">
-    <meta property="og:description" content="Create test files of specific sizes in various formats for testing purposes. Generate audio, video, PDF, and text files instantly.">
+    <meta property="og:title" content="FeedChecker - Test File Generator, Image Combiner & Browser Testing Tool">
+    <meta property="og:description" content="Generate test files of any size, combine two images into a single PDF, PNG, WebP, or JPEG with no quality loss, and test your browser features — all in one free tool.">
     <meta property="og:image" content="assets/FeedChecker.png">
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://feedchecker.org/">
-    <meta property="twitter:title" content="FeedChecker - Generate Test Files of Any Size & Format">
-    <meta property="twitter:description" content="Create test files of specific sizes in various formats for testing purposes. Generate audio, video, PDF, and text files instantly.">
+    <meta property="twitter:title" content="FeedChecker - Test File Generator, Image Combiner & Browser Testing Tool">
+    <meta property="twitter:description" content="Generate test files of any size, combine two images into a single PDF, PNG, WebP, or JPEG with no quality loss, and test your browser features — all in one free tool.">
     <meta property="twitter:image" content="assets/FeedChecker.png">
 </head>
 <body>
@@ -61,6 +61,58 @@
                     
                     <div id="generationStatus" class="status-box"></div>
                     <div id="downloadLink" class="download-section"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="test-section">
+            <div class="test-container">
+                <div class="image-combiner">
+                    <h2>Image Combiner</h2>
+                    <p>Combine two images into a single file with no quality loss</p>
+
+                    <div class="image-inputs">
+                        <div class="image-input-group">
+                            <label for="imageInput1">Image 1</label>
+                            <div class="image-drop-zone" id="dropZone1">
+                                <input type="file" id="imageInput1" accept="image/*">
+                                <img id="imagePreview1" class="image-preview" alt="Preview 1">
+                                <span id="imagePlaceholder1">Click or drop image here</span>
+                            </div>
+                        </div>
+                        <div class="image-input-group">
+                            <label for="imageInput2">Image 2</label>
+                            <div class="image-drop-zone" id="dropZone2">
+                                <input type="file" id="imageInput2" accept="image/*">
+                                <img id="imagePreview2" class="image-preview" alt="Preview 2">
+                                <span id="imagePlaceholder2">Click or drop image here</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="combiner-controls">
+                        <div class="input-group">
+                            <label for="combineLayout">Layout:</label>
+                            <select id="combineLayout">
+                                <option value="side-by-side">Side by Side</option>
+                                <option value="stacked">Top / Bottom</option>
+                                <option value="pages">Separate Pages (PDF only)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="combineFormat">Output Format:</label>
+                            <select id="combineFormat">
+                                <option value="png">PNG (Lossless)</option>
+                                <option value="webp">WebP (Lossless)</option>
+                                <option value="jpeg">JPEG (Max Quality)</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                        </div>
+                        <button id="combineImagesButton">Combine Images</button>
+                    </div>
+
+                    <div id="combinerStatus" class="status-box"></div>
+                    <div id="combinerDownload" class="download-section"></div>
                 </div>
             </div>
         </section>
