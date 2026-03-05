@@ -976,3 +976,85 @@ combineImagesButton.addEventListener('click', async () => {
         console.error('Image combiner error:', err);
     }
 });
+
+// ── Image Compressor ──────────────────────────────────────────────────────────
+
+const compressImageInput = document.getElementById('compressImageInput');
+const compressImagePreview = document.getElementById('compressImagePreview');
+const compressImagePlaceholder = document.getElementById('compressImagePlaceholder');
+const compressQuality = document.getElementById('compressQuality');
+const compressFormat = document.getElementById('compressFormat');
+const compressImageButton = document.getElementById('compressImageButton');
+const compressorStatus = document.getElementById('compressorStatus');
+const compressorDownload = document.getElementById('compressorDownload');
+
+let loadedCompressImage = null;
+
+compressImageInput.addEventListener('change', async (e) => {
+    if (e.target.files[0]) {
+        try {
+            loadedCompressImage = await loadImageFromFile(e.target.files[0], compressImagePreview, compressImagePlaceholder);
+            compressorStatus.textContent = `Original size: ${(e.target.files[0].size / 1024).toFixed(1)} KB`;
+        } catch (err) {
+            compressorStatus.textContent = `Error loading image: ${err.message}`;
+        }
+    }
+});
+
+const compressZone = document.getElementById('compressDropZone');
+compressZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    compressZone.classList.add('drag-over');
+});
+compressZone.addEventListener('dragleave', () => compressZone.classList.remove('drag-over'));
+compressZone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    compressZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+        try {
+            loadedCompressImage = await loadImageFromFile(file, compressImagePreview, compressImagePlaceholder);
+            compressorStatus.textContent = `Original size: ${(file.size / 1024).toFixed(1)} KB`;
+        } catch (err) {
+            compressorStatus.textContent = `Error loading image: ${err.message}`;
+        }
+    }
+});
+
+compressImageButton.addEventListener('click', async () => {
+    if (!loadedCompressImage) {
+        compressorStatus.textContent = 'Please select an image first.';
+        return;
+    }
+
+    const quality = parseFloat(compressQuality.value);
+    const format = compressFormat.value;
+    const mimeType = format === 'webp' ? 'image/webp' : 'image/jpeg';
+    const ext = format === 'webp' ? 'webp' : 'jpg';
+
+    compressorStatus.textContent = 'Compressing…';
+    compressorDownload.innerHTML = '';
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = loadedCompressImage.naturalWidth;
+        canvas.height = loadedCompressImage.naturalHeight;
+        canvas.getContext('2d').drawImage(loadedCompressImage, 0, 0);
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, quality));
+        const url = URL.createObjectURL(blob);
+        const sizeKB = (blob.size / 1024).toFixed(1);
+
+        compressorStatus.textContent = `Done! Compressed size: ${sizeKB} KB`;
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `compressed.${ext}`;
+        link.textContent = `Download compressed.${ext}`;
+        link.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(url), 100));
+        compressorDownload.appendChild(link);
+    } catch (err) {
+        compressorStatus.textContent = `Error: ${err.message}`;
+        console.error('Image compressor error:', err);
+    }
+});
