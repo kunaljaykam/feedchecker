@@ -650,19 +650,23 @@ async function generateFile() {
                         throw new Error('Invalid file type selected');
                 }
 
-                // Use the custom file name if provided, otherwise fall back to the default
-                let baseName = fileNameInput.value
-                    .replace(/[\\/:*?"<>|]/g, '')
-                    .replace(/^\.+/, '')
-                    .trim();
-                if (!baseName) {
-                    baseName = `sample-${safeFileSize}MB`;
-                }
-                // Avoid a doubled extension if the user typed one
-                if (baseName.toLowerCase().endsWith(`.${extension}`)) {
-                    baseName = baseName.slice(0, -(extension.length + 1));
-                }
-                const fileName = `${baseName}.${extension}`;
+                // Build the file name from the input, falling back to the default;
+                // re-run at click time so renames after generation still apply
+                const buildFileName = () => {
+                    let baseName = fileNameInput.value
+                        .replace(/[\\/:*?"<>|]/g, '')
+                        .replace(/^\.+/, '')
+                        .trim();
+                    if (!baseName) {
+                        baseName = `sample-${safeFileSize}MB`;
+                    }
+                    // Avoid a doubled extension if the user typed one
+                    if (baseName.toLowerCase().endsWith(`.${extension}`)) {
+                        baseName = baseName.slice(0, -(extension.length + 1));
+                    }
+                    return `${baseName}.${extension}`;
+                };
+                const fileName = buildFileName();
                 
                 // Security check: Verify blob was created successfully
                 if (!blob || !(blob instanceof Blob)) {
@@ -682,12 +686,17 @@ async function generateFile() {
                 
                 // Add event listener to revoke the object URL after download
                 downloadLink.addEventListener('click', () => {
+                    downloadLink.download = buildFileName();
                     setTimeout(() => {
                         URL.revokeObjectURL(url);
                     }, 100);
                 });
-                
+
                 downloadLinkContainer.appendChild(downloadLink);
+
+                // Keep the link in sync if the name is changed after generation
+                activeDownloadLink = downloadLink;
+                activeBuildFileName = buildFileName;
                 
             } catch (error) {
                 generationStatus.textContent = `Error generating file: ${error.message}`;
@@ -717,6 +726,18 @@ fileSizeInput.addEventListener('input', () => {
     fileNameInput.placeholder = (!isNaN(size) && size > 0)
         ? `sample-${Math.min(size, 100)}MB`
         : 'sample-1MB';
+});
+
+// Update the current download link when the file name is edited after generation
+let activeDownloadLink = null;
+let activeBuildFileName = null;
+
+fileNameInput.addEventListener('input', () => {
+    if (activeDownloadLink && activeBuildFileName) {
+        const name = activeBuildFileName();
+        activeDownloadLink.download = name;
+        activeDownloadLink.textContent = `Download ${name}`;
+    }
 });
 
 // ── Image Combiner ────────────────────────────────────────────────────────────
