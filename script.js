@@ -32,6 +32,7 @@ const checkAudioDevicesBtn = document.getElementById('checkAudioDevices');
 // File Generator elements
 const fileSizeInput = document.getElementById('fileSize');
 const fileTypeSelect = document.getElementById('fileType');
+const fileNameInput = document.getElementById('fileName');
 const generateFileButton = document.getElementById('generateFileButton');
 const generationStatus = document.getElementById('generationStatus');
 const downloadLinkContainer = document.getElementById('downloadLink');
@@ -623,31 +624,45 @@ async function generateFile() {
         setTimeout(async () => {
             try {
                 let blob;
-                let fileName;
-                
+                let extension;
+
                 // Set a maximum size for browser memory safety
                 const safeFileSize = Math.min(fileSize, 100);
-                
+
                 switch (fileType) {
                     case 'audio':
                         blob = generateAudioFile(safeFileSize);
-                        fileName = `sample-${safeFileSize}MB.wav`;
+                        extension = 'wav';
                         break;
                     case 'video':
                         blob = await generateVideoFile(safeFileSize);
-                        fileName = `sample-${safeFileSize}MB.webm`;
+                        extension = 'webm';
                         break;
                     case 'pdf':
                         blob = generatePdfFile(safeFileSize);
-                        fileName = `sample-${safeFileSize}MB.pdf`;
+                        extension = 'pdf';
                         break;
                     case 'text':
                         blob = generateTextFile(safeFileSize);
-                        fileName = `sample-${safeFileSize}MB.txt`;
+                        extension = 'txt';
                         break;
                     default:
                         throw new Error('Invalid file type selected');
                 }
+
+                // Use the custom file name if provided, otherwise fall back to the default
+                let baseName = fileNameInput.value
+                    .replace(/[\\/:*?"<>|]/g, '')
+                    .replace(/^\.+/, '')
+                    .trim();
+                if (!baseName) {
+                    baseName = `sample-${safeFileSize}MB`;
+                }
+                // Avoid a doubled extension if the user typed one
+                if (baseName.toLowerCase().endsWith(`.${extension}`)) {
+                    baseName = baseName.slice(0, -(extension.length + 1));
+                }
+                const fileName = `${baseName}.${extension}`;
                 
                 // Security check: Verify blob was created successfully
                 if (!blob || !(blob instanceof Blob)) {
@@ -695,6 +710,14 @@ async function generateFile() {
 
 // Event listener for file generation
 generateFileButton.addEventListener('click', generateFile);
+
+// Keep the file name placeholder in sync with the default name
+fileSizeInput.addEventListener('input', () => {
+    const size = parseFloat(fileSizeInput.value);
+    fileNameInput.placeholder = (!isNaN(size) && size > 0)
+        ? `sample-${Math.min(size, 100)}MB`
+        : 'sample-1MB';
+});
 
 // ── Image Combiner ────────────────────────────────────────────────────────────
 
@@ -1058,3 +1081,921 @@ compressImageButton.addEventListener('click', async () => {
         console.error('Image compressor error:', err);
     }
 });
+
+// ── PDF Editor ────────────────────────────────────────────────────────────────
+
+(function () {
+    // pdf.js worker
+    const PDFJS_WORKER = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+    // State
+    let pdfDoc = null;           // pdf-lib PDFDocument (for export)
+    let pdfJsDoc = null;         // pdf.js document (for rendering)
+    let originalBytes = null;    // raw bytes of the loaded PDF
+    let currentPage = 1;
+    let totalPages = 0;
+    let zoomLevel = 1.0;
+    let activeTool = 'text';
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let pendingImageBytes = null; // image asset for placing
+    let pendingImageMime = null;
+
+    // Per-page annotations: Map<pageNumber, Annotation[]>
+    // Annotation = { type, x, y, text, color, fontSize, lineWidth, x2, y2, width, height, imageBytes, mime }
+    const annotations = new Map();
+    // Undo stack: array of snapshots { page, annots: [...] }
+    const undoStack = [];
+
+    // DOM refs
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfDropZone = document.getElementById('pdfDropZone');
+    const pdfDropLabel = document.getElementById('pdfDropLabel');
+    const pdfEditorWorkspace = document.getElementById('pdfEditorWorkspace');
+    const pdfEditorStatus = document.getElementById('pdfEditorStatus');
+    const pdfCanvas = document.getElementById('pdfCanvas');
+    const pdfOverlayCanvas = document.getElementById('pdfOverlayCanvas');
+    const pdfCanvasWrapper = document.getElementById('pdfCanvasWrapper');
+    const pdfPageIndicator = document.getElementById('pdfPageIndicator');
+    const pdfZoomLevel = document.getElementById('pdfZoomLevel');
+    const pdfAnnotCount = document.getElementById('pdfAnnotCount');
+    const pdfAnnotList = document.getElementById('pdfAnnotList');
+    const pdfTextPanel = document.getElementById('pdfTextPanel');
+    const pdfTextInput = document.getElementById('pdfTextInput');
+    const pdfImageAsset = document.getElementById('pdfImageAsset');
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function getPageAnnotations(page) {
+        if (!annotations.has(page)) annotations.set(page, []);
+        return annotations.get(page);
+    }
+
+    function pushUndo() {
+        const snapshot = {
+            page: currentPage,
+            annots: JSON.parse(JSON.stringify(getPageAnnotations(currentPage).map(a => {
+                const copy = { ...a };
+                if (a.imageBytes) copy.imageBytes = a.imageBytes; // keep reference (Uint8Array)
+                return copy;
+            })))
+        };
+        undoStack.push(snapshot);
+        if (undoStack.length > 50) undoStack.shift();
+    }
+
+    function undo() {
+        if (!undoStack.length) return;
+        const snapshot = undoStack.pop();
+        annotations.set(snapshot.page, snapshot.annots);
+        if (snapshot.page === currentPage) {
+            renderOverlay();
+            updateAnnotList();
+        }
+    }
+
+    function getColor() { return document.getElementById('pdfColor').value; }
+    function getFontFamily() { return document.getElementById('pdfFontFamily').value || 'sans-serif'; }
+    function getFontSize() { return parseInt(document.getElementById('pdfFontSize').value) || 16; }
+    function getLineWidth() { return parseInt(document.getElementById('pdfLineWidth').value) || 2; }
+
+    // Convert canvas coords (at current zoom) → PDF-page coords
+    function canvasToPdfCoords(cx, cy, viewport) {
+        return { x: cx / zoomLevel, y: cy / zoomLevel };
+    }
+
+    // ── PDF.js rendering ─────────────────────────────────────────────────────
+
+    async function renderPage(pageNum) {
+        if (!pdfJsDoc) return;
+        const page = await pdfJsDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: zoomLevel });
+
+        pdfCanvas.width = viewport.width;
+        pdfCanvas.height = viewport.height;
+        pdfOverlayCanvas.width = viewport.width;
+        pdfOverlayCanvas.height = viewport.height;
+
+        await page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport }).promise;
+        renderOverlay();
+        updateUI();
+    }
+
+    // ── Selection state ───────────────────────────────────────────────────────
+
+    let selectedAnnotIdx = -1;
+
+    function deselectAnnotation() {
+        selectedAnnotIdx = -1;
+        document.getElementById('pdfSelectPanel').style.display = 'none';
+        renderOverlay();
+    }
+
+    function selectAnnotation(idx) {
+        selectedAnnotIdx = idx;
+        const annots = getPageAnnotations(currentPage);
+        const a = annots[idx];
+        if (!a) return;
+
+        const panel = document.getElementById('pdfSelectPanel');
+        panel.style.display = 'flex';
+        document.getElementById('pdfSelectType').textContent = `Selected: ${a.type}`;
+        document.getElementById('pdfSelectColor').value = a.color || '#000000';
+
+        const fontFamilyLabel = document.getElementById('pdfSelectFontFamilyLabel');
+        const fontFamilyInput = document.getElementById('pdfSelectFontFamily');
+        const fontSizeLabel = document.getElementById('pdfSelectFontSizeLabel');
+        const fontSizeInput = document.getElementById('pdfSelectFontSize');
+        const lineWidthLabel = document.getElementById('pdfSelectLineWidthLabel');
+        const lineWidthInput = document.getElementById('pdfSelectLineWidth');
+        const textRow = document.getElementById('pdfSelectTextRow');
+        const textArea = document.getElementById('pdfSelectText');
+
+        if (a.type === 'text') {
+            // Font family — match annotation's stored family exactly
+            fontFamilyLabel.style.display = '';
+            fontFamilyInput.style.display = '';
+            const storedFamily = a.fontFamily || 'sans-serif';
+            // Try to select the matching option; fall back to first
+            const opt = [...fontFamilyInput.options].find(o => o.value === storedFamily);
+            fontFamilyInput.value = opt ? storedFamily : fontFamilyInput.options[0].value;
+
+            fontSizeLabel.style.display = '';
+            fontSizeInput.style.display = '';
+            fontSizeInput.value = a.fontSize || 16;
+
+            lineWidthLabel.style.display = 'none';
+            lineWidthInput.style.display = 'none';
+
+            textRow.style.display = 'flex';
+            textArea.value = a.text || '';
+            // Live-preview the textarea in the annotation's exact font + size + color
+            textArea.style.fontFamily = storedFamily;
+            textArea.style.fontSize = `${a.fontSize || 16}px`;
+            textArea.style.color = a.color || '#000000';
+
+            // Keep preview in sync as user changes font/size/color in the panel
+            syncSelectPreview();
+        } else {
+            fontFamilyLabel.style.display = 'none';
+            fontFamilyInput.style.display = 'none';
+            fontSizeLabel.style.display = 'none';
+            fontSizeInput.style.display = 'none';
+            lineWidthLabel.style.display = a.type !== 'image' ? '' : 'none';
+            lineWidthInput.style.display = a.type !== 'image' ? '' : 'none';
+            if (a.lineWidth !== undefined) lineWidthInput.value = a.lineWidth;
+            textRow.style.display = 'none';
+        }
+
+        renderOverlay();
+    }
+
+    // Update textarea preview whenever panel inputs change
+    function syncSelectPreview() {
+        const textArea = document.getElementById('pdfSelectText');
+        const family = document.getElementById('pdfSelectFontFamily').value;
+        const size = document.getElementById('pdfSelectFontSize').value;
+        const color = document.getElementById('pdfSelectColor').value;
+        textArea.style.fontFamily = family;
+        textArea.style.fontSize = `${size}px`;
+        textArea.style.color = color;
+    }
+
+    ['pdfSelectFontFamily', 'pdfSelectFontSize', 'pdfSelectColor'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            const annots = getPageAnnotations(currentPage);
+            if (selectedAnnotIdx >= 0 && annots[selectedAnnotIdx] && annots[selectedAnnotIdx].type === 'text') {
+                syncSelectPreview();
+            }
+        });
+    });
+
+    // ── Hit testing ───────────────────────────────────────────────────────────
+
+    function annotBounds(a) {
+        if (a.type === 'text') {
+            const lineH = (a.fontSize || 16) * 1.3;
+            const lines = (a.text || '').split('\n');
+            return { x: a.x - 4, y: a.y - (a.fontSize || 16), w: 200, h: lines.length * lineH + 4 };
+        } else if (a.type === 'rect') {
+            const x = a.width >= 0 ? a.x : a.x + a.width;
+            const y = a.height >= 0 ? a.y : a.y + a.height;
+            return { x, y, w: Math.abs(a.width), h: Math.abs(a.height) };
+        } else if (a.type === 'line') {
+            const minX = Math.min(a.x, a.x2), maxX = Math.max(a.x, a.x2);
+            const minY = Math.min(a.y, a.y2), maxY = Math.max(a.y, a.y2);
+            return { x: minX - 6, y: minY - 6, w: maxX - minX + 12, h: maxY - minY + 12 };
+        } else if (a.type === 'image') {
+            return { x: a.x, y: a.y, w: Math.abs(a.width), h: Math.abs(a.height) };
+        }
+        return { x: a.x, y: a.y, w: 10, h: 10 };
+    }
+
+    function hitTest(px, py) {
+        const annots = getPageAnnotations(currentPage);
+        // Iterate in reverse so topmost annotation is selected first
+        for (let i = annots.length - 1; i >= 0; i--) {
+            const b = annotBounds(annots[i]);
+            if (px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // ── Overlay rendering ────────────────────────────────────────────────────
+
+    function renderOverlay() {
+        const ctx = pdfOverlayCanvas.getContext('2d');
+        ctx.clearRect(0, 0, pdfOverlayCanvas.width, pdfOverlayCanvas.height);
+        const annots = getPageAnnotations(currentPage);
+
+        annots.forEach((a, idx) => {
+            ctx.save();
+            ctx.strokeStyle = a.color;
+            ctx.fillStyle = a.color;
+            ctx.lineWidth = (a.lineWidth || 2) * zoomLevel;
+
+            if (a.type === 'text') {
+                const family = a.fontFamily || 'sans-serif';
+                ctx.font = `${(a.fontSize || 16) * zoomLevel}px ${family}`;
+                const lines = a.text.split('\n');
+                const lineH = (a.fontSize || 16) * zoomLevel * 1.3;
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, a.x * zoomLevel, a.y * zoomLevel + i * lineH);
+                });
+            } else if (a.type === 'rect') {
+                ctx.strokeRect(a.x * zoomLevel, a.y * zoomLevel, a.width * zoomLevel, a.height * zoomLevel);
+            } else if (a.type === 'line') {
+                ctx.beginPath();
+                ctx.moveTo(a.x * zoomLevel, a.y * zoomLevel);
+                ctx.lineTo(a.x2 * zoomLevel, a.y2 * zoomLevel);
+                ctx.stroke();
+            } else if (a.type === 'image' && a._img) {
+                ctx.drawImage(a._img, a.x * zoomLevel, a.y * zoomLevel, a.width * zoomLevel, a.height * zoomLevel);
+            }
+
+            // Selection highlight
+            if (idx === selectedAnnotIdx) {
+                const b = annotBounds(a);
+                ctx.strokeStyle = '#00AAFF';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 3]);
+                ctx.strokeRect(b.x * zoomLevel - 2, b.y * zoomLevel - 2, b.w * zoomLevel + 4, b.h * zoomLevel + 4);
+                ctx.setLineDash([]);
+                // Resize handle (bottom-right)
+                const hx = (b.x + b.w) * zoomLevel + 2;
+                const hy = (b.y + b.h) * zoomLevel + 2;
+                ctx.fillStyle = '#00AAFF';
+                ctx.fillRect(hx - 5, hy - 5, 10, 10);
+            }
+
+            ctx.restore();
+        });
+        updateAnnotList();
+    }
+
+    // ── Annotation list ──────────────────────────────────────────────────────
+
+    function updateAnnotList() {
+        const annots = getPageAnnotations(currentPage);
+        pdfAnnotCount.textContent = `(${annots.length})`;
+        pdfAnnotList.innerHTML = '';
+        annots.forEach((a, idx) => {
+            const li = document.createElement('li');
+            li.className = 'pdf-annot-item' + (idx === selectedAnnotIdx ? ' selected-annot' : '');
+            const label = document.createElement('span');
+            label.className = 'annot-label';
+            label.title = 'Click to select';
+            label.style.cursor = 'pointer';
+            label.textContent = `[${a.type}] ${a.type === 'text' ? a.text.substring(0, 40) : `@ (${Math.round(a.x)},${Math.round(a.y)})`}`;
+            label.addEventListener('click', () => {
+                activeTool = 'select';
+                document.querySelectorAll('.pdf-tool-btn[data-tool]').forEach(b => b.classList.remove('active-tool'));
+                document.getElementById('pdfToolSelect').classList.add('active-tool');
+                pdfOverlayCanvas.style.cursor = 'default';
+                selectAnnotation(idx);
+            });
+            const del = document.createElement('button');
+            del.textContent = 'Remove';
+            del.addEventListener('click', () => {
+                pushUndo();
+                annots.splice(idx, 1);
+                if (selectedAnnotIdx === idx) deselectAnnotation();
+                else renderOverlay();
+            });
+            li.appendChild(label);
+            li.appendChild(del);
+            pdfAnnotList.appendChild(li);
+        });
+    }
+
+    // ── UI update ────────────────────────────────────────────────────────────
+
+    function updateUI() {
+        pdfPageIndicator.textContent = `${currentPage} / ${totalPages}`;
+        pdfZoomLevel.textContent = `${Math.round(zoomLevel * 100)}%`;
+    }
+
+    // ── Load PDF ─────────────────────────────────────────────────────────────
+
+    async function loadPDF(file) {
+        pdfEditorStatus.textContent = 'Loading PDF…';
+        try {
+            originalBytes = new Uint8Array(await file.arrayBuffer());
+
+            // pdf-lib for editing
+            const { PDFDocument } = PDFLib;
+            pdfDoc = await PDFDocument.load(originalBytes, { ignoreEncryption: true });
+
+            // pdf.js for rendering
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF.js library not loaded yet. Please refresh the page.');
+            }
+            pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+            pdfJsDoc = await pdfjsLib.getDocument({ data: originalBytes }).promise;
+            totalPages = pdfJsDoc.numPages;
+            currentPage = 1;
+            annotations.clear();
+            undoStack.length = 0;
+
+            pdfEditorWorkspace.style.display = 'flex';
+            pdfDropLabel.textContent = `✓ ${file.name}`;
+            pdfEditorStatus.textContent = `Loaded: ${file.name} (${totalPages} page${totalPages > 1 ? 's' : ''})`;
+
+            await renderPage(currentPage);
+        } catch (err) {
+            pdfEditorStatus.textContent = `Error: ${err.message}`;
+            console.error('PDF load error:', err);
+        }
+    }
+
+    // ── Refresh pdf.js from pdf-lib bytes ────────────────────────────────────
+
+    async function refreshPdfJs() {
+        const { PDFDocument } = PDFLib;
+        const newBytes = await pdfDoc.save();
+        originalBytes = newBytes;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        pdfJsDoc = await pdfjsLib.getDocument({ data: newBytes }).promise;
+        totalPages = pdfJsDoc.numPages;
+        if (currentPage > totalPages) currentPage = totalPages;
+    }
+
+    // ── Canvas interaction ────────────────────────────────────────────────────
+
+    let textPlacementPending = false;
+    let pendingTextX = 0, pendingTextY = 0;
+
+    // Select-mode drag state
+    let selectDragging = false;
+    let selectDragOrigin = { px: 0, py: 0 };
+    let selectDragAnnotOrigin = null; // snapshot of annot position at drag start
+    let isResizing = false;
+
+    function getCanvasPos(e) {
+        const rect = pdfOverlayCanvas.getBoundingClientRect();
+        return { px: (e.clientX - rect.left) / zoomLevel, py: (e.clientY - rect.top) / zoomLevel };
+    }
+
+    function isOnResizeHandle(px, py, annot) {
+        const b = annotBounds(annot);
+        const hx = b.x + b.w;
+        const hy = b.y + b.h;
+        return Math.abs(px - hx) < 8 / zoomLevel && Math.abs(py - hy) < 8 / zoomLevel;
+    }
+
+    pdfOverlayCanvas.addEventListener('mousedown', (e) => {
+        const { px, py } = getCanvasPos(e);
+
+        if (activeTool === 'select') {
+            const annots = getPageAnnotations(currentPage);
+            // Check if clicking resize handle of current selection
+            if (selectedAnnotIdx >= 0 && annots[selectedAnnotIdx] && isOnResizeHandle(px, py, annots[selectedAnnotIdx])) {
+                pushUndo();
+                isResizing = true;
+                selectDragging = true;
+                selectDragOrigin = { px, py };
+                selectDragAnnotOrigin = { ...annots[selectedAnnotIdx] };
+                return;
+            }
+            const hit = hitTest(px, py);
+            if (hit >= 0) {
+                selectAnnotation(hit);
+                pushUndo();
+                selectDragging = true;
+                isResizing = false;
+                selectDragOrigin = { px, py };
+                selectDragAnnotOrigin = { ...annots[hit] };
+                pdfOverlayCanvas.style.cursor = 'move';
+            } else {
+                deselectAnnotation();
+            }
+            return;
+        }
+
+        if (activeTool === 'text') {
+            pendingTextX = px;
+            pendingTextY = py;
+            textPlacementPending = true;
+            pdfTextPanel.style.display = 'flex';
+            pdfTextInput.focus();
+        } else if (activeTool === 'rect' || activeTool === 'line') {
+            isDragging = true;
+            dragStart = { x: px, y: py };
+        } else if (activeTool === 'image') {
+            if (pendingImageBytes) {
+                placeImageAt(px, py);
+            } else {
+                pdfImageAsset.click();
+                pendingTextX = px;
+                pendingTextY = py;
+                textPlacementPending = true;
+            }
+        }
+    });
+
+    pdfOverlayCanvas.addEventListener('mousemove', (e) => {
+        const { px, py } = getCanvasPos(e);
+
+        if (activeTool === 'select') {
+            // Update cursor hint
+            if (!selectDragging) {
+                const annots = getPageAnnotations(currentPage);
+                if (selectedAnnotIdx >= 0 && annots[selectedAnnotIdx]) {
+                    if (isOnResizeHandle(px, py, annots[selectedAnnotIdx])) {
+                        pdfOverlayCanvas.style.cursor = 'nwse-resize';
+                        return;
+                    }
+                }
+                const hit = hitTest(px, py);
+                pdfOverlayCanvas.style.cursor = hit >= 0 ? 'move' : 'default';
+            }
+
+            if (!selectDragging) return;
+            const annots = getPageAnnotations(currentPage);
+            const a = annots[selectedAnnotIdx];
+            if (!a) return;
+            const dx = px - selectDragOrigin.px;
+            const dy = py - selectDragOrigin.py;
+
+            if (isResizing) {
+                const orig = selectDragAnnotOrigin;
+                if (a.type === 'rect' || a.type === 'image') {
+                    a.width = Math.max(10, (orig.width || 50) + dx);
+                    a.height = Math.max(10, (orig.height || 50) + dy);
+                } else if (a.type === 'line') {
+                    a.x2 = orig.x2 + dx;
+                    a.y2 = orig.y2 + dy;
+                }
+            } else {
+                const orig = selectDragAnnotOrigin;
+                a.x = orig.x + dx;
+                a.y = orig.y + dy;
+                if (a.type === 'line') { a.x2 = orig.x2 + dx; a.y2 = orig.y2 + dy; }
+                if (a.type === 'rect' || a.type === 'image') {
+                    // width/height stay the same; x/y move
+                }
+            }
+            renderOverlay();
+            return;
+        }
+
+        if (!isDragging) return;
+        renderOverlay();
+        const ctx = pdfOverlayCanvas.getContext('2d');
+        ctx.save();
+        ctx.strokeStyle = getColor();
+        ctx.lineWidth = getLineWidth() * zoomLevel;
+        if (activeTool === 'rect') {
+            ctx.strokeRect(
+                dragStart.x * zoomLevel, dragStart.y * zoomLevel,
+                (px - dragStart.x) * zoomLevel, (py - dragStart.y) * zoomLevel
+            );
+        } else if (activeTool === 'line') {
+            ctx.beginPath();
+            ctx.moveTo(dragStart.x * zoomLevel, dragStart.y * zoomLevel);
+            ctx.lineTo(px * zoomLevel, py * zoomLevel);
+            ctx.stroke();
+        }
+        ctx.restore();
+    });
+
+    pdfOverlayCanvas.addEventListener('mouseup', (e) => {
+        if (activeTool === 'select') {
+            if (selectDragging) {
+                selectDragging = false;
+                isResizing = false;
+                pdfOverlayCanvas.style.cursor = 'default';
+                // Refresh panel position display
+                const annots = getPageAnnotations(currentPage);
+                if (selectedAnnotIdx >= 0 && annots[selectedAnnotIdx]) {
+                    selectAnnotation(selectedAnnotIdx);
+                }
+            }
+            return;
+        }
+
+        if (!isDragging) return;
+        isDragging = false;
+        const { px, py } = getCanvasPos(e);
+
+        pushUndo();
+        if (activeTool === 'rect') {
+            getPageAnnotations(currentPage).push({
+                type: 'rect',
+                x: dragStart.x, y: dragStart.y,
+                width: px - dragStart.x,
+                height: py - dragStart.y,
+                color: getColor(),
+                lineWidth: getLineWidth()
+            });
+        } else if (activeTool === 'line') {
+            getPageAnnotations(currentPage).push({
+                type: 'line',
+                x: dragStart.x, y: dragStart.y,
+                x2: px, y2: py,
+                color: getColor(),
+                lineWidth: getLineWidth()
+            });
+        }
+        renderOverlay();
+    });
+
+    // Double-click to edit annotation directly (text: opens edit panel; others: select)
+    pdfOverlayCanvas.addEventListener('dblclick', (e) => {
+        const { px, py } = getCanvasPos(e);
+        const hit = hitTest(px, py);
+        if (hit < 0) return;
+
+        // Switch to select tool automatically
+        activeTool = 'select';
+        document.querySelectorAll('.pdf-tool-btn[data-tool]').forEach(b => b.classList.remove('active-tool'));
+        document.getElementById('pdfToolSelect').classList.add('active-tool');
+        pdfOverlayCanvas.style.cursor = 'default';
+        pdfTextPanel.style.display = 'none';
+
+        selectAnnotation(hit);
+
+        const a = getPageAnnotations(currentPage)[hit];
+        if (a && a.type === 'text') {
+            document.getElementById('pdfSelectText').focus();
+        }
+    });
+
+    // Text placement
+    document.getElementById('pdfTextConfirm').addEventListener('click', () => {
+        const text = pdfTextInput.value.trim();
+        if (!text) return;
+        pushUndo();
+        getPageAnnotations(currentPage).push({
+            type: 'text',
+            x: pendingTextX,
+            y: pendingTextY,
+            text,
+            color: getColor(),
+            fontFamily: getFontFamily(),
+            fontSize: getFontSize()
+        });
+        pdfTextInput.value = '';
+        pdfTextPanel.style.display = 'none';
+        textPlacementPending = false;
+        renderOverlay();
+    });
+
+    document.getElementById('pdfTextCancel').addEventListener('click', () => {
+        pdfTextInput.value = '';
+        pdfTextPanel.style.display = 'none';
+        textPlacementPending = false;
+    });
+
+    // ── Selection panel actions ───────────────────────────────────────────────
+
+    document.getElementById('pdfSelectApply').addEventListener('click', () => {
+        if (selectedAnnotIdx < 0) return;
+        const annots = getPageAnnotations(currentPage);
+        const a = annots[selectedAnnotIdx];
+        if (!a) return;
+        pushUndo();
+        a.color = document.getElementById('pdfSelectColor').value;
+        if (a.type === 'text') {
+            a.fontFamily = document.getElementById('pdfSelectFontFamily').value;
+            a.fontSize = parseInt(document.getElementById('pdfSelectFontSize').value) || 16;
+            a.text = document.getElementById('pdfSelectText').value;
+        } else if (a.type !== 'image') {
+            a.lineWidth = parseInt(document.getElementById('pdfSelectLineWidth').value) || 2;
+        }
+        renderOverlay();
+        document.getElementById('pdfSelectType').textContent = `Selected: ${a.type} (saved)`;
+    });
+
+    document.getElementById('pdfSelectDelete').addEventListener('click', () => {
+        if (selectedAnnotIdx < 0) return;
+        const annots = getPageAnnotations(currentPage);
+        pushUndo();
+        annots.splice(selectedAnnotIdx, 1);
+        deselectAnnotation();
+    });
+
+    document.getElementById('pdfSelectDeselect').addEventListener('click', deselectAnnotation);
+
+    // Image asset
+    pdfImageAsset.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        pendingImageBytes = new Uint8Array(await file.arrayBuffer());
+        pendingImageMime = file.type;
+        if (textPlacementPending) {
+            placeImageAt(pendingTextX, pendingTextY);
+            textPlacementPending = false;
+        }
+        pdfImageAsset.value = '';
+    });
+
+    async function placeImageAt(px, py) {
+        if (!pendingImageBytes) return;
+        const blob = new Blob([pendingImageBytes], { type: pendingImageMime });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+            const maxW = 200;
+            const scale = Math.min(1, maxW / img.naturalWidth);
+            pushUndo();
+            const annot = {
+                type: 'image',
+                x: px, y: py,
+                width: img.naturalWidth * scale,
+                height: img.naturalHeight * scale,
+                imageBytes: pendingImageBytes,
+                mime: pendingImageMime,
+                color: '#000000',
+                _img: img
+            };
+            getPageAnnotations(currentPage).push(annot);
+            renderOverlay();
+            URL.revokeObjectURL(url);
+        };
+        img.src = url;
+    }
+
+    // ── Tool buttons ─────────────────────────────────────────────────────────
+
+    ['pdfToolSelect', 'pdfToolText', 'pdfToolRect', 'pdfToolLine', 'pdfToolImage'].forEach(id => {
+        const btn = document.getElementById(id);
+        btn.addEventListener('click', () => {
+            activeTool = btn.dataset.tool;
+            document.querySelectorAll('.pdf-tool-btn[data-tool]').forEach(b => b.classList.remove('active-tool'));
+            btn.classList.add('active-tool');
+            pdfOverlayCanvas.style.cursor = activeTool === 'select' ? 'default' : 'crosshair';
+            if (activeTool === 'image') {
+                pendingImageBytes = null;
+                pdfEditorStatus.textContent = 'Image tool: click the canvas where you want to place the image, then choose a file.';
+            } else {
+                pdfEditorStatus.textContent = '';
+            }
+            if (activeTool !== 'select') {
+                deselectAnnotation();
+            }
+            pdfTextPanel.style.display = 'none';
+        });
+    });
+
+    // ── Navigation ───────────────────────────────────────────────────────────
+
+    document.getElementById('pdfPrevPage').addEventListener('click', async () => {
+        if (currentPage > 1) { currentPage--; await renderPage(currentPage); }
+    });
+    document.getElementById('pdfNextPage').addEventListener('click', async () => {
+        if (currentPage < totalPages) { currentPage++; await renderPage(currentPage); }
+    });
+
+    // ── Zoom ─────────────────────────────────────────────────────────────────
+
+    document.getElementById('pdfZoomIn').addEventListener('click', async () => {
+        zoomLevel = Math.min(zoomLevel + 0.2, 4.0);
+        await renderPage(currentPage);
+    });
+    document.getElementById('pdfZoomOut').addEventListener('click', async () => {
+        zoomLevel = Math.max(zoomLevel - 0.2, 0.2);
+        await renderPage(currentPage);
+    });
+    document.getElementById('pdfZoomFit').addEventListener('click', async () => {
+        const wrapperWidth = pdfCanvasWrapper.clientWidth - 4;
+        if (!pdfJsDoc) return;
+        const page = await pdfJsDoc.getPage(currentPage);
+        const vp = page.getViewport({ scale: 1 });
+        zoomLevel = Math.min(wrapperWidth / vp.width, 2.0);
+        await renderPage(currentPage);
+    });
+
+    // ── Page management ──────────────────────────────────────────────────────
+
+    document.getElementById('pdfDeletePage').addEventListener('click', async () => {
+        if (totalPages <= 1) { pdfEditorStatus.textContent = 'Cannot delete the only page.'; return; }
+        if (!confirm(`Delete page ${currentPage}?`)) return;
+        pdfDoc.removePage(currentPage - 1);
+        annotations.delete(currentPage);
+        // Re-key annotations above deleted page
+        const newMap = new Map();
+        annotations.forEach((v, k) => {
+            if (k < currentPage) newMap.set(k, v);
+            else if (k > currentPage) newMap.set(k - 1, v);
+        });
+        annotations.clear();
+        newMap.forEach((v, k) => annotations.set(k, v));
+
+        await refreshPdfJs();
+        if (currentPage > totalPages) currentPage = totalPages;
+        await renderPage(currentPage);
+        pdfEditorStatus.textContent = `Page deleted. ${totalPages} page(s) remaining.`;
+    });
+
+    document.getElementById('pdfAddBlankPage').addEventListener('click', async () => {
+        const page = pdfDoc.getPages()[currentPage - 1];
+        const { width, height } = page.getSize();
+        pdfDoc.insertPage(currentPage, [width, height]);
+        // Shift annotations above insertion
+        const newMap = new Map();
+        annotations.forEach((v, k) => {
+            if (k <= currentPage) newMap.set(k, v);
+            else newMap.set(k + 1, v);
+        });
+        annotations.clear();
+        newMap.forEach((v, k) => annotations.set(k, v));
+
+        await refreshPdfJs();
+        currentPage++;
+        await renderPage(currentPage);
+        pdfEditorStatus.textContent = 'Blank page inserted.';
+    });
+
+    document.getElementById('pdfMovePageUp').addEventListener('click', async () => {
+        if (currentPage <= 1) return;
+        const pages = pdfDoc.getPages();
+        // pdf-lib doesn't have movePage, so copy + remove
+        const idx = currentPage - 1;
+        const [copiedPage] = await pdfDoc.copyPages(pdfDoc, [idx]);
+        pdfDoc.insertPage(idx - 1, copiedPage);
+        pdfDoc.removePage(idx + 1); // original shifted by 1
+
+        // Swap annotations
+        const a = annotations.get(currentPage);
+        const b = annotations.get(currentPage - 1);
+        if (a) annotations.set(currentPage - 1, a); else annotations.delete(currentPage - 1);
+        if (b) annotations.set(currentPage, b); else annotations.delete(currentPage);
+
+        await refreshPdfJs();
+        currentPage--;
+        await renderPage(currentPage);
+    });
+
+    document.getElementById('pdfMovePageDown').addEventListener('click', async () => {
+        if (currentPage >= totalPages) return;
+        const idx = currentPage - 1;
+        const [copiedPage] = await pdfDoc.copyPages(pdfDoc, [idx + 1]);
+        pdfDoc.insertPage(idx, copiedPage);
+        pdfDoc.removePage(idx + 2);
+
+        const a = annotations.get(currentPage);
+        const b = annotations.get(currentPage + 1);
+        if (b) annotations.set(currentPage, b); else annotations.delete(currentPage);
+        if (a) annotations.set(currentPage + 1, a); else annotations.delete(currentPage + 1);
+
+        await refreshPdfJs();
+        currentPage++;
+        await renderPage(currentPage);
+    });
+
+    // ── Undo ─────────────────────────────────────────────────────────────────
+
+    document.getElementById('pdfUndoBtn').addEventListener('click', undo);
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && pdfEditorWorkspace.style.display !== 'none') {
+            undo();
+        }
+    });
+
+    // ── Download (bake annotations) ──────────────────────────────────────────
+
+    document.getElementById('pdfDownloadBtn').addEventListener('click', async () => {
+        if (!pdfDoc) return;
+        pdfEditorStatus.textContent = 'Preparing download…';
+        try {
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
+
+            // Work on a fresh copy so we don't mutate the live doc
+            const exportDoc = await PDFDocument.load(await pdfDoc.save(), { ignoreEncryption: true });
+            const font = await exportDoc.embedFont(StandardFonts.Helvetica);
+            const exportPages = exportDoc.getPages();
+
+            for (const [pageNum, annots] of annotations) {
+                const pIdx = pageNum - 1;
+                if (pIdx < 0 || pIdx >= exportPages.length) continue;
+                const pg = exportPages[pIdx];
+                const { height: pgH } = pg.getSize();
+
+                for (const a of annots) {
+                    const color = hexToRgb(a.color);
+                    if (a.type === 'text') {
+                        const lines = a.text.split('\n');
+                        const lineH = (a.fontSize || 16) * 1.3;
+                        lines.forEach((line, i) => {
+                            if (!line) return;
+                            pg.drawText(line, {
+                                x: a.x,
+                                y: pgH - a.y - i * lineH,
+                                size: a.fontSize || 16,
+                                font,
+                                color: rgb(color.r, color.g, color.b)
+                            });
+                        });
+                    } else if (a.type === 'rect') {
+                        pg.drawRectangle({
+                            x: a.x,
+                            y: pgH - a.y - Math.abs(a.height),
+                            width: Math.abs(a.width),
+                            height: Math.abs(a.height),
+                            borderColor: rgb(color.r, color.g, color.b),
+                            borderWidth: a.lineWidth || 2,
+                            color: undefined
+                        });
+                    } else if (a.type === 'line') {
+                        pg.drawLine({
+                            start: { x: a.x, y: pgH - a.y },
+                            end: { x: a.x2, y: pgH - a.y2 },
+                            thickness: a.lineWidth || 2,
+                            color: rgb(color.r, color.g, color.b)
+                        });
+                    } else if (a.type === 'image' && a.imageBytes) {
+                        try {
+                            let embeddedImg;
+                            if (a.mime === 'image/jpeg' || a.mime === 'image/jpg') {
+                                embeddedImg = await exportDoc.embedJpg(a.imageBytes);
+                            } else {
+                                // Convert to PNG via canvas
+                                const imgEl = new Image();
+                                const blobUrl = URL.createObjectURL(new Blob([a.imageBytes], { type: a.mime }));
+                                await new Promise(res => { imgEl.onload = res; imgEl.src = blobUrl; });
+                                const cvs = document.createElement('canvas');
+                                cvs.width = imgEl.naturalWidth; cvs.height = imgEl.naturalHeight;
+                                cvs.getContext('2d').drawImage(imgEl, 0, 0);
+                                const pngBlob = await new Promise(res => cvs.toBlob(res, 'image/png'));
+                                const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
+                                embeddedImg = await exportDoc.embedPng(pngBytes);
+                                URL.revokeObjectURL(blobUrl);
+                            }
+                            pg.drawImage(embeddedImg, {
+                                x: a.x,
+                                y: pgH - a.y - Math.abs(a.height),
+                                width: Math.abs(a.width),
+                                height: Math.abs(a.height)
+                            });
+                        } catch (imgErr) {
+                            console.warn('Could not embed image annotation:', imgErr);
+                        }
+                    }
+                }
+            }
+
+            const bytes = await exportDoc.save();
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'edited.pdf';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            pdfEditorStatus.textContent = 'Download started!';
+        } catch (err) {
+            pdfEditorStatus.textContent = `Export error: ${err.message}`;
+            console.error('PDF export error:', err);
+        }
+    });
+
+    function hexToRgb(hex) {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return { r, g, b };
+    }
+
+    // ── File input / drop zone ───────────────────────────────────────────────
+
+    pdfFileInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) loadPDF(e.target.files[0]);
+    });
+
+    pdfDropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        pdfDropZone.classList.add('drag-over');
+    });
+    pdfDropZone.addEventListener('dragleave', () => pdfDropZone.classList.remove('drag-over'));
+    pdfDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        pdfDropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'application/pdf') loadPDF(file);
+        else pdfEditorStatus.textContent = 'Please drop a PDF file.';
+    });
+})();
