@@ -10,21 +10,21 @@ body {
     min-height: 100vh;
     background-color: #2C2C2C;
     color: #F5F5F5;
-    font-size: 11px;
+    font-size: 16px;
 }
 
 h1 {
-    font-size: 18px;
+    font-size: 27px;
 }
 
 h2 {
-    font-size: 14px;
+    font-size: 21px;
 }
 
 .test-container p {
-    font-size: 10px;
+    font-size: 15px;
     color: #BBB;
-    margin: 0 0 3px;
+    margin: 0 0 4px;
 }
 
 header {
@@ -32,9 +32,9 @@ header {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    max-width: calc(48vw + 32px);
+    max-width: calc(48vw + 48px);
     margin: 0 auto;
-    padding: 13px 16px 3px;
+    padding: 20px 24px 4px;
 }
 
 .header-left, .header-right {
@@ -52,27 +52,27 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 16px;
+    padding: 24px;
 }
 
 #speed-header {
     color: #FFA500;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
     text-align: center;
 }
 
 .test-section {
     width: 100%;
     max-width: 48vw;
-    margin-bottom: 11px;
+    margin-bottom: 16px;
 }
 
 .test-container {
     display: flex;
     justify-content: space-around;
-    padding: 5px;
+    padding: 8px;
     background-color: #3A3A3A;
-    border-radius: 8px;
+    border-radius: 12px;
 }
 
 .test-container > div {
@@ -83,7 +83,7 @@ main {
 .test-container > div:not(.separator) {
     flex: 1 1 0;
     min-width: 0;
-    padding: 13px;
+    padding: 20px;
 }
 
 .test-container h1,
@@ -95,21 +95,21 @@ main {
     width: 1px;
     background-color: #555;
     height: auto;
-    margin: 13px 0;
+    margin: 20px 0;
 }
 
 button {
-    padding: 5px 11px;
-    margin: 3px;
+    padding: 8px 16px;
+    margin: 4px;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 500;
     line-height: 1.2;
     cursor: pointer;
     background-color: transparent;
     border: 1px solid rgba(255, 165, 0, 0.6);
     color: #FFA500;
-    border-radius: 5px;
+    border-radius: 8px;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
 
@@ -134,23 +134,23 @@ button:focus-visible {
 
 video {
     width: 100%;
-    max-width: 288px;
-    margin-bottom: 10px;
+    max-width: 432px;
+    margin-bottom: 15px;
     background-color: #000;
-    border-radius: 6px;
+    border-radius: 9px;
 }
 
 audio {
-    margin-top: 10px;
+    margin-top: 15px;
     width: 100%;
-    max-width: 256px;
-    height: 29px;
-    border-radius: 8px;
+    max-width: 384px;
+    height: 44px;
+    border-radius: 12px;
 }
 
 footer {
     text-align: center;
-    padding: 8px;
+    padding: 12px;
     width: 100%;
     position: relative;
     bottom: 0;
@@ -162,11 +162,11 @@ footer a {
 
 /* New CSS for notifications and feature checking */
 .status-box {
-    margin-top: 8px;
-    padding: 6px;
-    border-radius: 5px;
+    margin-top: 12px;
+    padding: 9px;
+    border-radius: 8px;
     background-color: #2C2C2C;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .status-box:empty {
@@ -176,19 +176,19 @@ footer a {
 .feature-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 12px;
     text-align: left;
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
 .feature-item {
     display: flex;
     align-items: center;
-    padding: 5px 6px;
-    min-height: 26px;
-    font-size: 10px;
+    padding: 8px 9px;
+    min-height: 39px;
+    font-size: 15px;
     background-color: #2C2C2C;
-    border-radius: 4px;
+    border-radius: 6px;
 }
 
 .feature-item > span:first-child {
@@ -197,10 +197,10 @@ footer a {
 
 .status-indicator {
     flex-shrink: 0;
-    width: 10px;
-    height: 10px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
-    margin-left: 8px;
+    margin-left: 12px;
     display: inline-block;
 }
 
@@ -213,9 +213,9 @@ footer a {
 }
 
 .mini-button {
-    padding: 2px 6px;
-    font-size: 10px;
-    margin: 0 0 0 6px;
+    padding: 2px 9px;
+    font-size: 15px;
+    margin: 0 0 0 9px;
 }
 
 /* File Generator Styles */
@@ -226,9 +226,9 @@ footer a {
 .file-generator-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-width: 256px;
-    margin: 11px auto 0;
+    gap: 12px;
+    max-width: 384px;
+    margin: 16px auto 0;
 }
 
 .input-group {
@@ -238,9 +238,9 @@ footer a {
 }
 
 .input-group label {
-    flex: 0 0 96px;
-    font-size: 10px;
-    margin-right: 8px;
+    flex: 0 0 144px;
+    font-size: 15px;
+    margin-right: 12px;
     text-align: left;
     white-space: nowrap;
 }
@@ -249,9 +249,9 @@ footer a {
 .input-group select {
     flex: 1;
     min-width: 0;
-    padding: 4px 6px;
-    font-size: 10px;
-    border-radius: 5px;
+    padding: 6px 9px;
+    font-size: 15px;
+    border-radius: 8px;
     border: 1px solid #444;
     background-color: #2C2C2C;
     color: #F5F5F5;
@@ -260,15 +260,15 @@ footer a {
 
 .download-section a {
     display: inline-block;
-    padding: 5px 11px;
+    padding: 8px 16px;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 500;
     color: #4CAF50;
     border: 1px solid rgba(76, 175, 80, 0.6);
     text-decoration: none;
-    border-radius: 5px;
-    margin-top: 8px;
+    border-radius: 8px;
+    margin-top: 12px;
 }
 
 .download-section a:hover {
@@ -282,9 +282,9 @@ footer a {
 
 .image-inputs {
     display: flex;
-    gap: 13px;
+    gap: 20px;
     justify-content: center;
-    margin: 11px 0 0;
+    margin: 16px 0 0;
     flex-wrap: wrap;
 }
 
@@ -292,20 +292,20 @@ footer a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 9px;
 }
 
 .image-input-group label {
-    font-size: 10px;
+    font-size: 15px;
     color: #FFA500;
 }
 
 .image-drop-zone {
     position: relative;
-    width: 112px;
-    height: 84px;
+    width: 168px;
+    height: 126px;
     border: 1px dashed rgba(255, 165, 0, 0.6);
-    border-radius: 6px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -340,16 +340,16 @@ footer a {
 
 .image-drop-zone span {
     color: #888;
-    font-size: 10px;
+    font-size: 15px;
     text-align: center;
-    padding: 8px;
+    padding: 12px;
     pointer-events: none;
     line-height: 1.4;
 }
 
 .video-drop-zone {
-    width: 192px;
-    height: 108px;
+    width: 288px;
+    height: 162px;
     max-width: 100%;
 }
 
@@ -362,18 +362,18 @@ footer a {
 .combiner-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-width: 256px;
-    margin: 11px auto 0;
+    gap: 12px;
+    max-width: 384px;
+    margin: 16px auto 0;
 }
 
 .file-generator-controls > button,
 .combiner-controls > button {
     align-self: center;
-    margin-top: 3px;
+    margin-top: 4px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1152px) {
     .image-inputs {
         flex-direction: column;
         align-items: center;
@@ -393,36 +393,36 @@ footer a {
 
 .pdf-drop-zone {
     width: 100%;
-    height: 48px;
+    height: 72px;
 }
 
 .pdf-editor-upload {
-    margin: 11px 0 0;
+    margin: 16px 0 0;
 }
 
 .pdf-editor-workspace {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
 
 /* Toolbar */
 .pdf-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 11px;
-    padding: 8px 11px;
+    gap: 16px;
+    padding: 12px 16px;
     background: #2C2C2C;
-    border-radius: 6px;
+    border-radius: 9px;
     align-items: center;
 }
 
 .pdf-toolbar-group {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
     border-right: 1px solid #555;
-    padding-right: 11px;
+    padding-right: 16px;
 }
 
 .pdf-toolbar-group:last-child {
@@ -430,7 +430,7 @@ footer a {
 }
 
 .toolbar-label {
-    font-size: 10px;
+    font-size: 15px;
     color: #888;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -438,12 +438,12 @@ footer a {
 }
 
 .pdf-tool-btn {
-    padding: 5px 10px;
-    font-size: 10px;
+    padding: 8px 15px;
+    font-size: 15px;
     margin: 0;
     background: #444;
     color: #F5F5F5;
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
     border: 1px solid #555;
     transition: background 0.2s, border-color 0.2s;
@@ -481,64 +481,64 @@ footer a {
 }
 
 .pdf-page-indicator {
-    font-size: 10px;
-    min-width: 42px;
+    font-size: 15px;
+    min-width: 63px;
     text-align: center;
     color: #F5F5F5;
 }
 
 .pdf-color-input {
-    width: 27px;
-    height: 24px;
+    width: 40px;
+    height: 36px;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 2px;
     cursor: pointer;
     background: #2C2C2C;
 }
 
 .pdf-number-input {
-    padding: 3px 5px;
-    border-radius: 3px;
+    padding: 4px 8px;
+    border-radius: 4px;
     border: 1px solid #555;
     background: #2C2C2C;
     color: #F5F5F5;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 .pdf-select-input {
-    padding: 3px 5px;
-    border-radius: 3px;
+    padding: 4px 8px;
+    border-radius: 4px;
     border: 1px solid #555;
     background: #2C2C2C;
     color: #F5F5F5;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 15px;
     cursor: pointer;
 }
 
 /* Text panel */
 .pdf-text-panel {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: flex-start;
     background: #2C2C2C;
-    padding: 8px;
-    border-radius: 6px;
+    padding: 12px;
+    border-radius: 9px;
     flex-wrap: wrap;
 }
 
 .pdf-text-panel textarea {
     flex: 1;
-    min-width: 160px;
-    padding: 6px;
-    border-radius: 4px;
+    min-width: 240px;
+    padding: 9px;
+    border-radius: 6px;
     border: 1px solid #555;
     background: #3A3A3A;
     color: #F5F5F5;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 16px;
     resize: vertical;
 }
 
@@ -546,15 +546,15 @@ footer a {
 .pdf-select-panel {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 9px;
     background: #2C2C2C;
     border: 1px solid #FFA500;
-    padding: 8px 11px;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: 9px;
 }
 
 .select-panel-label {
-    font-size: 10px;
+    font-size: 15px;
     color: #FFA500;
     font-weight: bold;
     text-transform: uppercase;
@@ -564,26 +564,26 @@ footer a {
 .select-panel-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
 .select-panel-row label {
-    font-size: 10px;
+    font-size: 15px;
     color: #aaa;
-    min-width: 29px;
+    min-width: 44px;
 }
 
 .select-text-area {
     flex: 1;
-    min-width: 160px;
-    padding: 5px 6px;
-    border-radius: 4px;
+    min-width: 240px;
+    padding: 8px 9px;
+    border-radius: 6px;
     border: 1px solid #555;
     background: #3A3A3A;
     color: #F5F5F5;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 15px;
     resize: vertical;
 }
 
@@ -594,7 +594,7 @@ footer a {
     align-self: flex-start;
     background: #1a1a1a;
     border: 1px solid #555;
-    border-radius: 5px;
+    border-radius: 8px;
     overflow: auto;
     max-width: 100%;
     max-height: 72vh;
@@ -617,13 +617,13 @@ footer a {
 /* Annotations list */
 .pdf-annotations-panel {
     background: #2C2C2C;
-    border-radius: 6px;
-    padding: 8px 13px;
+    border-radius: 9px;
+    padding: 12px 20px;
 }
 
 .pdf-annotations-panel h4 {
-    margin: 0 0 6px;
-    font-size: 10px;
+    margin: 0 0 9px;
+    font-size: 15px;
     color: #FFA500;
 }
 
@@ -633,19 +633,19 @@ footer a {
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    max-height: 128px;
+    gap: 8px;
+    max-height: 192px;
     overflow-y: auto;
 }
 
 .pdf-annot-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 9px;
     background: #3A3A3A;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 10px;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 15px;
 }
 
 .pdf-annot-item .annot-label {
@@ -661,8 +661,8 @@ footer a {
 }
 
 .pdf-annot-item button {
-    padding: 2px 6px;
-    font-size: 10px;
+    padding: 2px 9px;
+    font-size: 15px;
     margin: 0;
     background: #c0392b;
     color: #fff;
@@ -671,13 +671,13 @@ footer a {
 }
 
 /* Zoom container scroll */
-.pdf-canvas-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
+.pdf-canvas-wrapper::-webkit-scrollbar { width: 9px; height: 9px; }
 .pdf-canvas-wrapper::-webkit-scrollbar-track { background: #222; }
-.pdf-canvas-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+.pdf-canvas-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 
-@media (max-width: 768px) {
+@media (max-width: 1152px) {
     .pdf-toolbar {
-        gap: 6px;
+        gap: 9px;
     }
     .pdf-toolbar-group {
         border-right: none;
@@ -688,17 +688,17 @@ footer a {
 
 /* ── Responsive (existing) ────────────────────────────────────────────────── */
 /* Content stays at 60% of the screen on wide displays, widening on smaller ones */
-@media (max-width: 1280px) {
+@media (max-width: 1920px) {
     .test-section {
         max-width: 64vw;
     }
 
     header {
-        max-width: calc(64vw + 32px);
+        max-width: calc(64vw + 48px);
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1152px) {
     header {
         flex-direction: column;
     }
@@ -720,7 +720,7 @@ footer a {
     }
 
     main {
-        padding: 10px;
+        padding: 15px;
     }
 
     .test-section {
@@ -732,13 +732,13 @@ footer a {
     }
 
     .test-container {
-        padding: 6px;
+        padding: 9px;
     }
 
     .input-group {
         flex-direction: column;
         align-items: stretch;
-        gap: 5px;
+        gap: 8px;
     }
 
     .input-group label {
@@ -747,7 +747,7 @@ footer a {
     }
 
     header {
-        padding: 16px 10px;
+        padding: 24px 15px;
     }
 
     .file-generator-controls,
@@ -766,15 +766,15 @@ footer a {
 
 .beta-tag {
     display: inline-block;
-    margin-left: 7px;
-    padding: 1px 7px;
+    margin-left: 10px;
+    padding: 1px 10px;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 12px;
+    font-size: 18px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     vertical-align: middle;
     color: #FFA500;
     border: 1px solid rgba(255, 165, 0, 0.6);
-    border-radius: 999px;
+    border-radius: 1498px;
 }
