@@ -766,10 +766,10 @@ footer a {
 
 .beta-tag {
     display: inline-block;
-    margin-left: 6px;
-    padding: 1px 6px;
+    margin-left: 7px;
+    padding: 1px 7px;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
