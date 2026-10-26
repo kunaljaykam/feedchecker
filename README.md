@@ -14,6 +14,12 @@ FeedChecker is an open-source web tool for generating test files of any size and
 - Instant download of generated files
 - Client-side generation (no server uploads/downloads)
 
+### Video Compressor
+- Reduce video file size by targeting a lower bitrate (75% to 10% of the original)
+- Optionally downscale to 1080p, 720p, 480p or 360p
+- Keeps the audio track; outputs WebM (or MP4 where the browser records MP4)
+- Runs entirely in your browser, so videos are never uploaded
+
 ### Device Testing
 - Video and Audio Test: Check both your camera and microphone simultaneously
 - Audio Test Only: Verify your microphone independently
@@ -46,6 +52,12 @@ FeedChecker is an open-source web tool for generating test files of any size and
 3. Select the file format (Audio, Video, PDF, or Text)
 4. Click "Generate File"
 5. Once generated, click the download link to save the file
+
+#### Compressing a Video
+1. Click or drop a video into the Video Compressor
+2. Choose the target bitrate and, optionally, a lower resolution
+3. Click "Compress Video" and keep the tab visible while it processes (it takes about as long as the video plays)
+4. Click the download link to save the compressed file
 
 #### Testing Camera and Audio
 1. For video and audio test, click on "Start Video"

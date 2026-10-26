@@ -3,26 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FeedChecker - Test File Generator, Image Combiner, Compressor, PDF Editor & Browser Testing Tool</title>
+    <title>FeedChecker - Free Video Compressor, Image Compressor, Image Combiner, PDF Editor & Test File Generator</title>
     <link rel="icon" type="image/png" href="assets/FeedChecker.png">
     <link rel="stylesheet" href="style.css">
-    <meta name="description" content="FeedChecker lets you generate test files (audio, video, PDF, text) of any size, combine two images into a single PDF, PNG, WebP, or JPEG with no quality loss, compress images to reduce file size, edit PDFs by adding text, images and shapes, and test your camera, microphone, browser features, and notifications.">
-    <meta name="keywords" content="test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, image combiner, combine images, merge images, images to pdf, images to jpeg, lossless image merge, image compressor, compress image, reduce image size, reduce image file size, image quality reducer, jpeg compressor, webp compressor, pdf editor, edit pdf, add text to pdf, annotate pdf, camera test, audio test, browser features test">
+    <link rel="canonical" href="https://feedchecker.org/">
+    <meta name="description" content="Free online tools that run in your browser: compress videos and images to reduce file size, combine two images into PDF, PNG, WebP or JPEG, edit PDFs, generate test files of any size, and test your camera, microphone and browser features. No uploads.">
+    <meta name="keywords" content="video compressor, compress video, reduce video size, reduce video file size, video size reducer, compress mp4, compress video online, webm compressor, lower video resolution, test file generator, sample file generator, create test files, dummy file generator, specific file size, audio test file, video test file, pdf test file, text file generator, image combiner, combine images, merge images, images to pdf, images to jpeg, lossless image merge, image compressor, compress image, reduce image size, reduce image file size, jpeg compressor, webp compressor, pdf editor, edit pdf, add text to pdf, annotate pdf, camera test, microphone test, browser features test">
     <meta name="author" content="Kunal Jaykam">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4CAF50">
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="FeedChecker">
     <meta property="og:url" content="https://feedchecker.org/">
-    <meta property="og:title" content="FeedChecker - Test File Generator, Image Combiner, Compressor & Browser Testing Tool">
-    <meta property="og:description" content="Generate test files of any size, combine two images into a single PDF, PNG, WebP, or JPEG with no quality loss, compress images to reduce file size, and test your browser features — all in one free tool.">
-    <meta property="og:image" content="assets/FeedChecker.png">
+    <meta property="og:title" content="FeedChecker - Free Video & Image Compressor, PDF Editor & Test File Generator">
+    <meta property="og:description" content="Compress videos and images, combine images, edit PDFs, generate test files of any size, and test your camera, mic and browser — free, private, and entirely in your browser.">
+    <meta property="og:image" content="https://feedchecker.org/assets/FeedChecker.png">
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://feedchecker.org/">
-    <meta property="twitter:title" content="FeedChecker - Test File Generator, Image Combiner, Compressor & Browser Testing Tool">
-    <meta property="twitter:description" content="Generate test files of any size, combine two images into a single PDF, PNG, WebP, or JPEG with no quality loss, compress images to reduce file size, and test your browser features — all in one free tool.">
-    <meta property="twitter:image" content="assets/FeedChecker.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://feedchecker.org/">
+    <meta name="twitter:title" content="FeedChecker - Free Video & Image Compressor, PDF Editor & Test File Generator">
+    <meta name="twitter:description" content="Compress videos and images, combine images, edit PDFs, generate test files of any size, and test your camera, mic and browser — free, private, and entirely in your browser.">
+    <meta name="twitter:image" content="https://feedchecker.org/assets/FeedChecker.png">
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "FeedChecker",
+        "url": "https://feedchecker.org/",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any (web browser)",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Kunal Jaykam", "url": "https://kunaljaykam.com" },
+        "description": "Free in-browser tools: video compressor, image compressor, image combiner, PDF editor, test file generator, and camera, microphone and browser feature tests.",
+        "featureList": [
+            "Video compressor - reduce video file size by bitrate and resolution",
+            "Image compressor - reduce JPEG and WebP image size",
+            "Image combiner - merge two images into PDF, PNG, WebP or JPEG",
+            "PDF editor - add text, images and shapes, reorder or delete pages",
+            "Test file generator - audio, video, PDF and text files of any size",
+            "Camera, microphone, notification and browser feature tests"
+        ]
+    }
+    </script>
 </head>
 <body>
     <header>
@@ -163,6 +188,181 @@
         </section>
 
         <section class="test-section">
+            <div class="test-container">
+                <div class="video-compressor">
+                    <h2>Video Compressor</h2>
+                    <p>Reduce video file size by lowering bitrate and resolution — processed entirely in your browser</p>
+
+                    <div class="image-inputs">
+                        <div class="image-input-group">
+                            <label for="compressVideoInput">Video</label>
+                            <div class="image-drop-zone video-drop-zone" id="compressVideoDropZone">
+                                <input type="file" id="compressVideoInput" accept="video/*">
+                                <video id="compressVideoPreview" class="image-preview" muted playsinline></video>
+                                <span id="compressVideoPlaceholder">Click or drop video here</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="combiner-controls">
+                        <div class="input-group">
+                            <label for="videoCompressQuality">Reduce to:</label>
+                            <select id="videoCompressQuality">
+                                <option value="0.75">75% bitrate</option>
+                                <option value="0.5" selected>50% bitrate</option>
+                                <option value="0.25">25% bitrate</option>
+                                <option value="0.1">10% bitrate</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="videoCompressResolution">Resolution:</label>
+                            <select id="videoCompressResolution">
+                                <option value="0">Original</option>
+                                <option value="1080">1080p</option>
+                                <option value="720">720p</option>
+                                <option value="480">480p</option>
+                                <option value="360">360p</option>
+                            </select>
+                        </div>
+                        <button id="compressVideoButton">Compress Video</button>
+                    </div>
+
+                    <div id="videoCompressorStatus" class="status-box"></div>
+                    <div id="videoCompressorDownload" class="download-section"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PDF Editor section -->
+        <section class="test-section" id="pdf-editor-section">
+            <div class="test-container pdf-editor-container">
+                <div class="pdf-editor">
+                    <h2>PDF Editor <span class="beta-tag">Beta</span></h2>
+                    <p>Upload a PDF and edit it — add text, images, shapes, reorder or delete pages, then download</p>
+
+                    <div class="pdf-editor-upload">
+                        <div class="image-drop-zone pdf-drop-zone" id="pdfDropZone">
+                            <input type="file" id="pdfFileInput" accept="application/pdf">
+                            <span id="pdfDropLabel">Click or drop a PDF here</span>
+                        </div>
+                    </div>
+
+                    <div id="pdfEditorWorkspace" class="pdf-editor-workspace" style="display:none;">
+                        <!-- Toolbar -->
+                        <div class="pdf-toolbar">
+                            <div class="pdf-toolbar-group">
+                                <label class="toolbar-label">Page</label>
+                                <button id="pdfPrevPage" class="pdf-tool-btn" title="Previous page">&#8592;</button>
+                                <span id="pdfPageIndicator" class="pdf-page-indicator">1 / 1</span>
+                                <button id="pdfNextPage" class="pdf-tool-btn" title="Next page">&#8594;</button>
+                            </div>
+                            <div class="pdf-toolbar-group">
+                                <label class="toolbar-label">Pages</label>
+                                <button id="pdfDeletePage" class="pdf-tool-btn danger" title="Delete current page">Delete Page</button>
+                                <button id="pdfMovePageUp" class="pdf-tool-btn" title="Move page left">&#8592; Move</button>
+                                <button id="pdfMovePageDown" class="pdf-tool-btn" title="Move page right">Move &#8594;</button>
+                                <button id="pdfAddBlankPage" class="pdf-tool-btn" title="Add blank page after current">+ Blank Page</button>
+                            </div>
+                            <div class="pdf-toolbar-group">
+                                <label class="toolbar-label">Tool</label>
+                                <button id="pdfToolSelect" class="pdf-tool-btn" data-tool="select">&#9654; Select</button>
+                                <button id="pdfToolText" class="pdf-tool-btn active-tool" data-tool="text">Text</button>
+                                <button id="pdfToolRect" class="pdf-tool-btn" data-tool="rect">Rectangle</button>
+                                <button id="pdfToolLine" class="pdf-tool-btn" data-tool="line">Line</button>
+                                <button id="pdfToolImage" class="pdf-tool-btn" data-tool="image">Image</button>
+                                <input type="file" id="pdfImageAsset" accept="image/*" style="display:none;">
+                            </div>
+                            <div class="pdf-toolbar-group">
+                                <label class="toolbar-label">Style</label>
+                                <input type="color" id="pdfColor" value="#000000" title="Color" class="pdf-color-input">
+                                <select id="pdfFontFamily" class="pdf-select-input" title="Font family">
+                                    <option value="sans-serif">Sans-serif</option>
+                                    <option value="serif">Serif</option>
+                                    <option value="monospace">Monospace</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                    <option value="Georgia, serif">Georgia</option>
+                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                    <option value="'Courier New', monospace">Courier New</option>
+                                    <option value="Verdana, sans-serif">Verdana</option>
+                                    <option value="Impact, sans-serif">Impact</option>
+                                </select>
+                                <input type="number" id="pdfFontSize" value="16" min="6" max="120" title="Font size" class="pdf-number-input" style="width:54px;">
+                                <input type="number" id="pdfLineWidth" value="2" min="1" max="20" title="Line/border width" class="pdf-number-input" style="width:44px;">
+                            </div>
+                            <div class="pdf-toolbar-group">
+                                <label class="toolbar-label">Zoom</label>
+                                <button id="pdfZoomOut" class="pdf-tool-btn">−</button>
+                                <span id="pdfZoomLevel" class="pdf-page-indicator">100%</span>
+                                <button id="pdfZoomIn" class="pdf-tool-btn">+</button>
+                                <button id="pdfZoomFit" class="pdf-tool-btn">Fit</button>
+                            </div>
+                            <div class="pdf-toolbar-group">
+                                <button id="pdfUndoBtn" class="pdf-tool-btn" title="Undo">Undo</button>
+                                <button id="pdfDownloadBtn" class="pdf-tool-btn success">Download PDF</button>
+                            </div>
+                        </div>
+
+                        <!-- Text input panel (visible when text tool active and placing) -->
+                        <div id="pdfTextPanel" class="pdf-text-panel" style="display:none;">
+                            <textarea id="pdfTextInput" placeholder="Type your text here…" rows="3"></textarea>
+                            <button id="pdfTextConfirm">Place Text</button>
+                            <button id="pdfTextCancel">Cancel</button>
+                        </div>
+
+                        <!-- Selection edit panel (visible when an annotation is selected) -->
+                        <div id="pdfSelectPanel" class="pdf-select-panel" style="display:none;">
+                            <span class="select-panel-label" id="pdfSelectType">Selected: —</span>
+                            <div class="select-panel-row">
+                                <label>Color</label>
+                                <input type="color" id="pdfSelectColor" value="#000000" class="pdf-color-input">
+                                <label id="pdfSelectFontFamilyLabel">Font</label>
+                                <select id="pdfSelectFontFamily" class="pdf-select-input" style="display:none;">
+                                    <option value="sans-serif">Sans-serif</option>
+                                    <option value="serif">Serif</option>
+                                    <option value="monospace">Monospace</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                    <option value="Georgia, serif">Georgia</option>
+                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                    <option value="'Courier New', monospace">Courier New</option>
+                                    <option value="Verdana, sans-serif">Verdana</option>
+                                    <option value="Impact, sans-serif">Impact</option>
+                                </select>
+                                <label id="pdfSelectFontSizeLabel">Size</label>
+                                <input type="number" id="pdfSelectFontSize" value="16" min="6" max="120" class="pdf-number-input" style="width:54px;display:none;">
+                                <label id="pdfSelectLineWidthLabel">Width</label>
+                                <input type="number" id="pdfSelectLineWidth" value="2" min="1" max="20" class="pdf-number-input" style="width:44px;display:none;">
+                            </div>
+                            <div class="select-panel-row" id="pdfSelectTextRow" style="display:none;">
+                                <label>Text</label>
+                                <textarea id="pdfSelectText" rows="2" class="select-text-area"></textarea>
+                            </div>
+                            <div class="select-panel-row">
+                                <button id="pdfSelectApply" class="pdf-tool-btn success">Apply</button>
+                                <button id="pdfSelectDelete" class="pdf-tool-btn danger">Delete</button>
+                                <button id="pdfSelectDeselect" class="pdf-tool-btn">Deselect</button>
+                            </div>
+                        </div>
+
+                        <!-- Canvas area -->
+                        <div class="pdf-canvas-wrapper" id="pdfCanvasWrapper">
+                            <canvas id="pdfCanvas"></canvas>
+                            <!-- Overlay for annotations -->
+                            <canvas id="pdfOverlayCanvas"></canvas>
+                        </div>
+
+                        <!-- Annotations list -->
+                        <div class="pdf-annotations-panel">
+                            <h4>Annotations on this page <span id="pdfAnnotCount">(0)</span></h4>
+                            <ul id="pdfAnnotList" class="pdf-annot-list"></ul>
+                        </div>
+                    </div>
+
+                    <div id="pdfEditorStatus" class="status-box"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="test-section">
             <!-- <h1 id="speed-header">Calculating your approximate internet speed...</h1> -->
             <div class="test-container">
                 <div class="video-audio-test">
@@ -234,135 +434,6 @@
     <footer>
         <p>An open-source project by <a href="https://kunaljaykam.com" target="_blank">Kunal Jaykam</a></p>
     </footer>
-    <!-- PDF Editor section -->
-    <section class="test-section" id="pdf-editor-section">
-        <div class="test-container pdf-editor-container">
-            <div class="pdf-editor">
-                <h2>PDF Editor</h2>
-                <p>Upload a PDF and edit it — add text, images, shapes, reorder or delete pages, then download</p>
-
-                <div class="pdf-editor-upload">
-                    <div class="image-drop-zone" id="pdfDropZone" style="width:100%;height:80px;flex-direction:row;gap:12px;">
-                        <input type="file" id="pdfFileInput" accept="application/pdf">
-                        <span id="pdfDropLabel">Click or drop a PDF here</span>
-                    </div>
-                </div>
-
-                <div id="pdfEditorWorkspace" class="pdf-editor-workspace" style="display:none;">
-                    <!-- Toolbar -->
-                    <div class="pdf-toolbar">
-                        <div class="pdf-toolbar-group">
-                            <label class="toolbar-label">Page</label>
-                            <button id="pdfPrevPage" class="pdf-tool-btn" title="Previous page">&#8592;</button>
-                            <span id="pdfPageIndicator" class="pdf-page-indicator">1 / 1</span>
-                            <button id="pdfNextPage" class="pdf-tool-btn" title="Next page">&#8594;</button>
-                        </div>
-                        <div class="pdf-toolbar-group">
-                            <label class="toolbar-label">Pages</label>
-                            <button id="pdfDeletePage" class="pdf-tool-btn danger" title="Delete current page">Delete Page</button>
-                            <button id="pdfMovePageUp" class="pdf-tool-btn" title="Move page left">&#8592; Move</button>
-                            <button id="pdfMovePageDown" class="pdf-tool-btn" title="Move page right">Move &#8594;</button>
-                            <button id="pdfAddBlankPage" class="pdf-tool-btn" title="Add blank page after current">+ Blank Page</button>
-                        </div>
-                        <div class="pdf-toolbar-group">
-                            <label class="toolbar-label">Tool</label>
-                            <button id="pdfToolSelect" class="pdf-tool-btn" data-tool="select">&#9654; Select</button>
-                            <button id="pdfToolText" class="pdf-tool-btn active-tool" data-tool="text">Text</button>
-                            <button id="pdfToolRect" class="pdf-tool-btn" data-tool="rect">Rectangle</button>
-                            <button id="pdfToolLine" class="pdf-tool-btn" data-tool="line">Line</button>
-                            <button id="pdfToolImage" class="pdf-tool-btn" data-tool="image">Image</button>
-                            <input type="file" id="pdfImageAsset" accept="image/*" style="display:none;">
-                        </div>
-                        <div class="pdf-toolbar-group">
-                            <label class="toolbar-label">Style</label>
-                            <input type="color" id="pdfColor" value="#000000" title="Color" class="pdf-color-input">
-                            <select id="pdfFontFamily" class="pdf-select-input" title="Font family">
-                                <option value="sans-serif">Sans-serif</option>
-                                <option value="serif">Serif</option>
-                                <option value="monospace">Monospace</option>
-                                <option value="Arial, sans-serif">Arial</option>
-                                <option value="Georgia, serif">Georgia</option>
-                                <option value="'Times New Roman', serif">Times New Roman</option>
-                                <option value="'Courier New', monospace">Courier New</option>
-                                <option value="Verdana, sans-serif">Verdana</option>
-                                <option value="Impact, sans-serif">Impact</option>
-                            </select>
-                            <input type="number" id="pdfFontSize" value="16" min="6" max="120" title="Font size" class="pdf-number-input" style="width:54px;">
-                            <input type="number" id="pdfLineWidth" value="2" min="1" max="20" title="Line/border width" class="pdf-number-input" style="width:44px;">
-                        </div>
-                        <div class="pdf-toolbar-group">
-                            <label class="toolbar-label">Zoom</label>
-                            <button id="pdfZoomOut" class="pdf-tool-btn">−</button>
-                            <span id="pdfZoomLevel" class="pdf-page-indicator">100%</span>
-                            <button id="pdfZoomIn" class="pdf-tool-btn">+</button>
-                            <button id="pdfZoomFit" class="pdf-tool-btn">Fit</button>
-                        </div>
-                        <div class="pdf-toolbar-group">
-                            <button id="pdfUndoBtn" class="pdf-tool-btn" title="Undo">Undo</button>
-                            <button id="pdfDownloadBtn" class="pdf-tool-btn success">Download PDF</button>
-                        </div>
-                    </div>
-
-                    <!-- Text input panel (visible when text tool active and placing) -->
-                    <div id="pdfTextPanel" class="pdf-text-panel" style="display:none;">
-                        <textarea id="pdfTextInput" placeholder="Type your text here…" rows="3"></textarea>
-                        <button id="pdfTextConfirm">Place Text</button>
-                        <button id="pdfTextCancel">Cancel</button>
-                    </div>
-
-                    <!-- Selection edit panel (visible when an annotation is selected) -->
-                    <div id="pdfSelectPanel" class="pdf-select-panel" style="display:none;">
-                        <span class="select-panel-label" id="pdfSelectType">Selected: —</span>
-                        <div class="select-panel-row">
-                            <label>Color</label>
-                            <input type="color" id="pdfSelectColor" value="#000000" class="pdf-color-input">
-                            <label id="pdfSelectFontFamilyLabel">Font</label>
-                            <select id="pdfSelectFontFamily" class="pdf-select-input" style="display:none;">
-                                <option value="sans-serif">Sans-serif</option>
-                                <option value="serif">Serif</option>
-                                <option value="monospace">Monospace</option>
-                                <option value="Arial, sans-serif">Arial</option>
-                                <option value="Georgia, serif">Georgia</option>
-                                <option value="'Times New Roman', serif">Times New Roman</option>
-                                <option value="'Courier New', monospace">Courier New</option>
-                                <option value="Verdana, sans-serif">Verdana</option>
-                                <option value="Impact, sans-serif">Impact</option>
-                            </select>
-                            <label id="pdfSelectFontSizeLabel">Size</label>
-                            <input type="number" id="pdfSelectFontSize" value="16" min="6" max="120" class="pdf-number-input" style="width:54px;display:none;">
-                            <label id="pdfSelectLineWidthLabel">Width</label>
-                            <input type="number" id="pdfSelectLineWidth" value="2" min="1" max="20" class="pdf-number-input" style="width:44px;display:none;">
-                        </div>
-                        <div class="select-panel-row" id="pdfSelectTextRow" style="display:none;">
-                            <label>Text</label>
-                            <textarea id="pdfSelectText" rows="2" class="select-text-area"></textarea>
-                        </div>
-                        <div class="select-panel-row">
-                            <button id="pdfSelectApply" class="pdf-tool-btn success">Apply</button>
-                            <button id="pdfSelectDelete" class="pdf-tool-btn danger">Delete</button>
-                            <button id="pdfSelectDeselect" class="pdf-tool-btn">Deselect</button>
-                        </div>
-                    </div>
-
-                    <!-- Canvas area -->
-                    <div class="pdf-canvas-wrapper" id="pdfCanvasWrapper">
-                        <canvas id="pdfCanvas"></canvas>
-                        <!-- Overlay for annotations -->
-                        <canvas id="pdfOverlayCanvas"></canvas>
-                    </div>
-
-                    <!-- Annotations list -->
-                    <div class="pdf-annotations-panel">
-                        <h4>Annotations on this page <span id="pdfAnnotCount">(0)</span></h4>
-                        <ul id="pdfAnnotList" class="pdf-annot-list"></ul>
-                    </div>
-                </div>
-
-                <div id="pdfEditorStatus" class="status-box"></div>
-            </div>
-        </div>
-    </section>
-
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="script.js"></script>

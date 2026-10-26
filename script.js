@@ -1103,6 +1103,194 @@ compressImageButton.addEventListener('click', async () => {
     }
 });
 
+// ── Video Compressor ──────────────────────────────────────────────────────────
+
+const compressVideoInput = document.getElementById('compressVideoInput');
+const compressVideoPreview = document.getElementById('compressVideoPreview');
+const compressVideoPlaceholder = document.getElementById('compressVideoPlaceholder');
+const videoCompressQuality = document.getElementById('videoCompressQuality');
+const videoCompressResolution = document.getElementById('videoCompressResolution');
+const compressVideoButton = document.getElementById('compressVideoButton');
+const videoCompressorStatus = document.getElementById('videoCompressorStatus');
+const videoCompressorDownload = document.getElementById('videoCompressorDownload');
+
+let loadedCompressVideo = null;
+let videoCompressing = false;
+
+function formatFileSize(bytes) {
+    return bytes >= 1024 * 1024
+        ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+        : `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function loadCompressVideo(file) {
+    if (videoCompressing) return;
+    if (!file.type.startsWith('video/')) {
+        videoCompressorStatus.textContent = 'Error loading video: File is not a video';
+        return;
+    }
+    if (compressVideoPreview.src) URL.revokeObjectURL(compressVideoPreview.src);
+    const url = URL.createObjectURL(file);
+    compressVideoPreview.onloadedmetadata = () => {
+        loadedCompressVideo = { file, url, duration: compressVideoPreview.duration };
+        compressVideoPreview.style.display = 'block';
+        compressVideoPlaceholder.style.display = 'none';
+        const res = `${compressVideoPreview.videoWidth}×${compressVideoPreview.videoHeight}`;
+        videoCompressorStatus.textContent = `Original size: ${formatFileSize(file.size)} (${res}, ${compressVideoPreview.duration.toFixed(1)}s)`;
+    };
+    compressVideoPreview.onerror = () => {
+        loadedCompressVideo = null;
+        videoCompressorStatus.textContent = 'Error loading video: this format is not supported by your browser';
+    };
+    videoCompressorDownload.innerHTML = '';
+    compressVideoPreview.src = url;
+}
+
+compressVideoInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) loadCompressVideo(e.target.files[0]);
+});
+
+const compressVideoZone = document.getElementById('compressVideoDropZone');
+compressVideoZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    compressVideoZone.classList.add('drag-over');
+});
+compressVideoZone.addEventListener('dragleave', () => compressVideoZone.classList.remove('drag-over'));
+compressVideoZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    compressVideoZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadCompressVideo(file);
+});
+
+function pickRecorderMimeType() {
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        'video/mp4',
+    ];
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+compressVideoButton.addEventListener('click', async () => {
+    if (!loadedCompressVideo) {
+        videoCompressorStatus.textContent = 'Please select a video first.';
+        return;
+    }
+    if (videoCompressing) return;
+    if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
+        videoCompressorStatus.textContent = 'Your browser does not support video compression.';
+        return;
+    }
+
+    const { file, url, duration } = loadedCompressVideo;
+    const fraction = parseFloat(videoCompressQuality.value);
+    const maxHeight = parseInt(videoCompressResolution.value, 10);
+    const mimeType = pickRecorderMimeType();
+    const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+    // Target bitrate is a fraction of the source's average bitrate, with a sane floor
+    const originalBitrate = (file.size * 8) / duration;
+    const videoBitsPerSecond = Math.max(150000, Math.round(originalBitrate * fraction));
+
+    videoCompressing = true;
+    compressVideoButton.disabled = true;
+    videoCompressorDownload.innerHTML = '';
+    videoCompressorStatus.textContent = 'Compressing… 0% (keep this tab open and visible)';
+
+    // A fresh element per run: createMediaElementSource can only be used once per element
+    const source = document.createElement('video');
+    source.src = url;
+    source.playsInline = true;
+    source.preload = 'auto';
+
+    let audioCtx = null;
+    try {
+        await new Promise((resolve, reject) => {
+            source.onloadedmetadata = resolve;
+            source.onerror = () => reject(new Error('Failed to decode video'));
+        });
+
+        let width = source.videoWidth;
+        let height = source.videoHeight;
+        if (maxHeight && height > maxHeight) {
+            width = Math.round(width * maxHeight / height);
+            height = maxHeight;
+        }
+        // Most encoders require even dimensions
+        width -= width % 2;
+        height -= height % 2;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const stream = canvas.captureStream(30);
+
+        // Route audio into the recording without playing it through the speakers
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioDest = audioCtx.createMediaStreamDestination();
+        audioCtx.createMediaElementSource(source).connect(audioDest);
+        audioDest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+
+        const recorder = new MediaRecorder(stream, {
+            ...(mimeType && { mimeType }),
+            videoBitsPerSecond,
+            audioBitsPerSecond: 96000,
+        });
+        const chunks = [];
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+        const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+        const drawFrame = () => {
+            ctx.drawImage(source, 0, 0, width, height);
+            const pct = Math.min(100, Math.floor((source.currentTime / duration) * 100));
+            videoCompressorStatus.textContent = `Compressing… ${pct}% (keep this tab open and visible)`;
+            if (source.ended) return;
+            if (source.requestVideoFrameCallback) source.requestVideoFrameCallback(drawFrame);
+            else requestAnimationFrame(drawFrame);
+        };
+
+        await audioCtx.resume();
+        recorder.start(1000);
+        await source.play();
+        drawFrame();
+
+        await new Promise((resolve, reject) => {
+            source.onended = resolve;
+            source.onerror = () => reject(new Error('Playback failed during compression'));
+        });
+        recorder.stop();
+        await stopped;
+
+        const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        const outUrl = URL.createObjectURL(blob);
+        const saved = ((1 - blob.size / file.size) * 100).toFixed(0);
+        videoCompressorStatus.textContent = blob.size < file.size
+            ? `Done! Compressed size: ${formatFileSize(blob.size)} (${saved}% smaller)`
+            : `Done, but output (${formatFileSize(blob.size)}) is not smaller than the original — try a lower bitrate or resolution.`;
+
+        const baseName = file.name.replace(/\.[^.]+$/, '') || 'video';
+        const link = document.createElement('a');
+        link.href = outUrl;
+        link.download = `${baseName}-compressed.${ext}`;
+        link.textContent = `Download ${link.download}`;
+        link.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(outUrl), 100));
+        videoCompressorDownload.appendChild(link);
+    } catch (err) {
+        videoCompressorStatus.textContent = `Error: ${err.message}`;
+        console.error('Video compressor error:', err);
+    } finally {
+        source.pause();
+        source.removeAttribute('src');
+        if (audioCtx) audioCtx.close();
+        videoCompressing = false;
+        compressVideoButton.disabled = false;
+    }
+});
+
 // ── PDF Editor ────────────────────────────────────────────────────────────────
 
 (function () {
